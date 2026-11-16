@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Compila (sin ejecutar) todos los scripts de la app Unity contra firmas de la API de Unity,
+    MediaPipe e Inference Engine. Variantes:
+      dotnet build -p:Variante=Editor    (editor con todos los paquetes)
+      dotnet build -p:Variante=Android   (teléfono Android con todos los paquetes)
+      dotnet build -p:Variante=iOSSinPaquetes (iPhone sin MediaPipe ni Inference Engine)
+  -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0618;CS0169;CS0414;CS0649;CS8632</NoWarn>
+    <Variante Condition="'$(Variante)' == ''">Editor</Variante>
+    <AssemblyName>LSRD.Verificacion.$(Variante)</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Variante)' == 'Editor'">
+    <DefineConstants>UNITY_EDITOR;LSRD_MEDIAPIPE;LSRD_INFERENCIA;LSRD_INPUT_SYSTEM;ENABLE_INPUT_SYSTEM</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Variante)' == 'Android'">
+    <DefineConstants>UNITY_ANDROID;LSRD_MEDIAPIPE;LSRD_INFERENCIA</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Variante)' == 'iOSSinPaquetes'">
+    <DefineConstants>UNITY_IOS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Stubs/*.cs" />
+    <Compile Include="../../../unity/LSRD-AR/Assets/LSRD/Scripts/Nucleo/**/*.cs" />
+    <Compile Include="../../../unity/LSRD-AR/Assets/LSRD/Scripts/App/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Variante)' == 'Editor'">
+    <Compile Include="../../../unity/LSRD-AR/Assets/LSRD/Scripts/Editor/**/*.cs" />
+    <Compile Include="../../../unity/LSRD-AR/Assets/LSRD/Tests/EditMode/**/*.cs" />
+    <Compile Include="../NucleoPruebas/NUnitMini.cs" />
+  </ItemGroup>
+</Project>

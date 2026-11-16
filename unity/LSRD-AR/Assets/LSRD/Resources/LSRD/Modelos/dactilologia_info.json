@@ -1,0 +1,40 @@
+{
+  "modelo": "dactilologia",
+  "formato": "LSRD-LM v1",
+  "entrada": {
+    "nombre": "mano",
+    "forma": [
+      1,
+      21,
+      3
+    ]
+  },
+  "salidas": [
+    "logits",
+    "probs"
+  ],
+  "clases": [
+    "DEMO-LETRA-00",
+    "DEMO-LETRA-01",
+    "DEMO-LETRA-02",
+    "DEMO-LETRA-03",
+    "DEMO-LETRA-04",
+    "DEMO-LETRA-05",
+    "DEMO-LETRA-06",
+    "DEMO-LETRA-07",
+    "DEMO-LETRA-08",
+    "DEMO-LETRA-09"
+  ],
+  "opset": 15,
+  "fecha_utc": "2026-11-16T23:23:25+00:00",
+  "diferencia_onnx": 1.1920928955078125e-07,
+  "metricas": {
+    "n": 405,
+    "exactitud": 1.0,
+    "exactitud_top3": 1.0,
+    "por_firmante": {
+      "P000": 1.0
+    }
+  },
+  "nota": "MODELO DE DEMOSTRACIÓN entrenado con datos sintéticos. No reconoce LSRD."
+}

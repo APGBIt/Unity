@@ -1,0 +1,9 @@
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
+ml/modelos/
+servidor/datos/
+herramientas/verificacion-csharp/*/bin/
+herramientas/verificacion-csharp/*/obj/
+.DS_Store

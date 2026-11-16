@@ -1,0 +1,25 @@
+{
+    "name": "LSRD.Editor",
+    "rootNamespace": "LSRD.Editor",
+    "references": [
+        "LSRD.Nucleo",
+        "LSRD.App"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.github.homuler.mediapipe",
+            "expression": "0.16.0",
+            "define": "LSRD_MEDIAPIPE"
+        }
+    ],
+    "noEngineReferences": false
+}

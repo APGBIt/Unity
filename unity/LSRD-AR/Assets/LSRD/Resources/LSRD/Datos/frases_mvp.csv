@@ -1,0 +1,51 @@
+id,espanol,glosas,direccion,rapida,estado,contexto
+F001,"Buenos días, ¿en qué le puedo ayudar?",,oyente_a_sordo,1,pendiente,saludo inicial
+F002,"Un momento, por favor.",,oyente_a_sordo,1,pendiente,espera
+F003,"Por favor, tome un turno y espere.",,oyente_a_sordo,1,pendiente,turnos
+F004,¿Me permite su cédula?,,oyente_a_sordo,1,pendiente,identificación
+F005,Necesito una copia de su cédula.,,oyente_a_sordo,0,pendiente,identificación
+F006,"Por favor, llene este formulario.",,oyente_a_sordo,1,pendiente,formularios
+F007,"Firme aquí, por favor.",,oyente_a_sordo,1,pendiente,formularios
+F008,¿Cuál es su nombre?,,oyente_a_sordo,1,pendiente,datos personales
+F009,¿Cuál es su número de teléfono?,,oyente_a_sordo,0,pendiente,datos personales
+F010,¿Tiene cita?,,oyente_a_sordo,1,pendiente,citas
+F011,Su cita es mañana.,,oyente_a_sordo,0,pendiente,citas
+F012,Vuelva la próxima semana.,,oyente_a_sordo,0,pendiente,citas
+F013,Su trámite está listo.,,oyente_a_sordo,1,pendiente,estado del trámite
+F014,Su trámite está pendiente.,,oyente_a_sordo,1,pendiente,estado del trámite
+F015,Le falta un documento.,,oyente_a_sordo,1,pendiente,requisitos
+F016,Debe pagar en la caja.,,oyente_a_sordo,0,pendiente,pagos
+F017,Es gratis.,,oyente_a_sordo,0,pendiente,pagos
+F018,El baño está a la derecha.,,oyente_a_sordo,0,pendiente,orientación
+F019,La salida está allá.,,oyente_a_sordo,0,pendiente,orientación
+F020,"Pase, por favor.",,oyente_a_sordo,1,pendiente,atención
+F021,"Tome asiento, por favor.",,oyente_a_sordo,1,pendiente,atención
+F022,¿Entendió?,,oyente_a_sordo,1,pendiente,comprobación
+F023,Gracias por su paciencia.,,oyente_a_sordo,0,pendiente,cortesía
+F024,¿Necesita un intérprete?,,oyente_a_sordo,1,pendiente,accesibilidad
+F025,Vamos a llamar a un intérprete.,,oyente_a_sordo,1,pendiente,accesibilidad
+F026,Puede escribirlo aquí.,,oyente_a_sordo,1,pendiente,comunicación
+F027,Su audiencia es el lunes por la mañana.,,oyente_a_sordo,0,pendiente,justicia
+F028,Debe traer su acta de nacimiento.,,oyente_a_sordo,0,pendiente,requisitos
+F029,Le enviaremos la respuesta por correo.,,oyente_a_sordo,0,pendiente,seguimiento
+F030,¿Qué documento necesita?,,oyente_a_sordo,0,pendiente,requisitos
+F031,Buenos días.,,sordo_a_oyente,1,pendiente,saludo
+F032,Soy sordo.,,sordo_a_oyente,1,pendiente,presentación
+F033,Necesito un intérprete.,,sordo_a_oyente,1,pendiente,accesibilidad
+F034,No entiendo.,,sordo_a_oyente,1,pendiente,comunicación
+F035,"Repita, por favor.",,sordo_a_oyente,1,pendiente,comunicación
+F036,"Más despacio, por favor.",,sordo_a_oyente,1,pendiente,comunicación
+F037,"Por favor, escríbalo.",,sordo_a_oyente,1,pendiente,comunicación
+F038,Quiero hacer una solicitud.,,sordo_a_oyente,0,pendiente,trámites
+F039,Necesito una cita.,,sordo_a_oyente,0,pendiente,citas
+F040,¿Dónde está el baño?,,sordo_a_oyente,0,pendiente,orientación
+F041,¿Cuánto cuesta?,,sordo_a_oyente,0,pendiente,pagos
+F042,¿Cuándo está listo?,,sordo_a_oyente,0,pendiente,estado del trámite
+F043,Perdí mi cédula.,,sordo_a_oyente,0,pendiente,identificación
+F044,Quiero poner una denuncia.,,sordo_a_oyente,0,pendiente,justicia
+F045,Tengo una audiencia hoy.,,sordo_a_oyente,0,pendiente,justicia
+F046,¿A dónde tengo que ir?,,sordo_a_oyente,0,pendiente,orientación
+F047,¿Qué documentos necesito?,,sordo_a_oyente,0,pendiente,requisitos
+F048,Gracias.,,sordo_a_oyente,1,pendiente,cortesía
+F049,Es urgente.,,sordo_a_oyente,1,pendiente,prioridad
+F050,Necesito ayuda.,,sordo_a_oyente,1,pendiente,ayuda

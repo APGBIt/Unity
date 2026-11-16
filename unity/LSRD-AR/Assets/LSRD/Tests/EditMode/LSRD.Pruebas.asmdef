@@ -1,0 +1,32 @@
+{
+    "name": "LSRD.Pruebas",
+    "rootNamespace": "LSRD.Pruebas",
+    "references": [
+        "LSRD.Nucleo",
+        "LSRD.App",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Unity.InferenceEngine"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.ai.inference",
+            "expression": "2.2.0",
+            "define": "LSRD_INFERENCIA"
+        }
+    ],
+    "noEngineReferences": false
+}

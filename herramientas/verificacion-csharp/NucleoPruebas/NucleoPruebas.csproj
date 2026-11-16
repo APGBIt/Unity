@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Compila el núcleo de la app (sin Unity) y sus pruebas con C# 9, como Unity 6. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="../../../unity/LSRD-AR/Assets/LSRD/Scripts/Nucleo/**/*.cs" />
+    <Compile Include="../../../unity/LSRD-AR/Assets/LSRD/Tests/EditMode/DatosPrueba.cs" />
+    <Compile Include="../../../unity/LSRD-AR/Assets/LSRD/Tests/EditMode/PruebasNucleo.cs" />
+  </ItemGroup>
+</Project>

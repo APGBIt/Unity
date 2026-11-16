@@ -1,0 +1,11 @@
+[project]
+name = "lsrd-ml"
+version = "0.1.0"
+description = "Canal de entrenamiento del reconocedor de Lengua de Señas Dominicana (LSRD)"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+packages = ["lsrd_ml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

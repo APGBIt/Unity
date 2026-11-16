@@ -1,0 +1,55 @@
+{
+  "modelo": "senas",
+  "formato": "LSRD-LM v1",
+  "entrada": {
+    "nombre": "landmarks",
+    "forma": [
+      1,
+      32,
+      78,
+      3
+    ]
+  },
+  "salidas": [
+    "logits",
+    "probs"
+  ],
+  "longitud_secuencia": 32,
+  "clases": [
+    "_FONDO",
+    "DEMO-01",
+    "DEMO-02",
+    "DEMO-03",
+    "DEMO-04",
+    "DEMO-05",
+    "DEMO-06",
+    "DEMO-07",
+    "DEMO-08",
+    "DEMO-09",
+    "DEMO-10",
+    "DEMO-11",
+    "DEMO-12",
+    "DEMO-13",
+    "DEMO-14",
+    "DEMO-15",
+    "DEMO-16",
+    "DEMO-17",
+    "DEMO-18",
+    "DEMO-19",
+    "DEMO-20"
+  ],
+  "clase_fondo": "_FONDO",
+  "opset": 15,
+  "fecha_utc": "2026-11-16T23:23:21+00:00",
+  "diferencia_onnx": 3.2782554626464844e-07,
+  "metricas": {
+    "n": 252,
+    "exactitud": 0.9722222222222222,
+    "exactitud_top3": 1.0,
+    "por_firmante": {
+      "P004": 0.9682539682539683,
+      "P006": 0.9761904761904762
+    }
+  },
+  "nota": "MODELO DE DEMOSTRACIÓN entrenado con datos sintéticos. No reconoce LSRD."
+}
