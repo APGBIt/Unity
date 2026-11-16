@@ -61,6 +61,9 @@ namespace LSRD.Editor
 #endif
         }
 
+        static readonly string[] ArchivosVocabulario =
+            { "vocabulario_mvp.csv", "frases_mvp.csv", "emergencias.csv", "cobertura_diccionario_oficial.csv" };
+
         static string CopiarVocabulario()
         {
             var raizRepo = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".."));
@@ -68,7 +71,7 @@ namespace LSRD.Editor
             var destino = CarpetaRecursos + "/Datos";
             Directory.CreateDirectory(destino);
             int copiados = 0;
-            foreach (var nombre in new[] { "vocabulario_mvp.csv", "frases_mvp.csv" })
+            foreach (var nombre in ArchivosVocabulario)
             {
                 var archivo = Path.Combine(origen, nombre);
                 if (!File.Exists(archivo)) continue;
@@ -76,7 +79,7 @@ namespace LSRD.Editor
                 copiados++;
             }
             AssetDatabase.Refresh();
-            return copiados == 2
+            return copiados == ArchivosVocabulario.Length
                 ? "✔ Vocabulario y frases copiados desde la carpeta vocabulario/ del repositorio."
                 : "⚠ No se encontró la carpeta vocabulario/ del repositorio; se usa la copia que ya está en Resources.";
         }

@@ -11,6 +11,8 @@ namespace LSRD.App
         public event Action AlConversacion;
         public event Action AlRecoleccion;
         public event Action AlAjustes;
+        public event Action AlDiccionario;
+        public event Action AlEmergencia;
         readonly Text estado;
 
         public PantallaInicio(Transform padre)
@@ -27,11 +29,16 @@ namespace LSRD.App
             UIFabrica.Elemento(UIFabrica.Texto(col, "Prototipo para atención al público", Tema.Normal, Tema.TextoSecundario, TextAnchor.UpperLeft), 70);
             UIFabrica.Elemento(UIFabrica.Nodo(col, "Espacio"), 40);
             UIFabrica.Boton(col, "Conversación", () => AlConversacion?.Invoke(), Tema.Acento, Tema.Fondo, Tema.Grande, 170);
-            UIFabrica.Boton(col, "Recolección de datos", () => AlRecoleccion?.Invoke(), Tema.SuperficieClara, null, Tema.Normal, 140);
-            UIFabrica.Boton(col, "Ajustes", () => AlAjustes?.Invoke(), Tema.SuperficieClara, null, Tema.Normal, 140);
+            UIFabrica.Boton(col, "Emergencia", () => AlEmergencia?.Invoke(), Tema.Peligro, Tema.Texto, Tema.Grande, 150);
+            UIFabrica.Boton(col, "Diccionario", () => AlDiccionario?.Invoke(), Tema.SuperficieClara, null, Tema.Normal, 130);
+            var filaMenu = UIFabrica.Nodo(col, "Secundarios");
+            UIFabrica.Horizontal(filaMenu.gameObject, 16);
+            UIFabrica.Elemento(filaMenu, 120);
+            UIFabrica.Boton(filaMenu, "Recolección de datos", () => AlRecoleccion?.Invoke(), Tema.SuperficieClara, null, Tema.Pequeno, 0);
+            UIFabrica.Boton(filaMenu, "Ajustes", () => AlAjustes?.Invoke(), Tema.SuperficieClara, null, Tema.Pequeno, 0);
 
             var caja = UIFabrica.Panel(col, "Estado", Tema.Superficie);
-            UIFabrica.Elemento(caja, 520);
+            UIFabrica.Elemento(caja, 460);
             estado = UIFabrica.Texto(caja.transform, "", Tema.Pequeno, Tema.TextoSecundario, TextAnchor.UpperLeft);
             UIFabrica.Estirar(estado.rectTransform, 28, 24, 28, 24);
 

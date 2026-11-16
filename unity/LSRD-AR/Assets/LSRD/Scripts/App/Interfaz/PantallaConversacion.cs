@@ -34,6 +34,9 @@ namespace LSRD.App
         public event Action<FraseRapida> AlFraseRapida;
         public event Action<int, string> AlCorregir;
         public event Action<float> AlVelocidadAvatar;
+        public event Action AlEmergencia;
+        /// <summary>Tipo de problema (ver <see cref="Reporte.Tipos"/>) y la corrección que escribió la persona.</summary>
+        public event Action<string, string> AlReportar;
 
         readonly AspectRatioFitter ajusteCamara;
         readonly Image indicadorManos, indicadorServidor;
@@ -47,8 +50,10 @@ namespace LSRD.App
         readonly Text textoEmpleado, fuenteEmpleado;
         readonly Button botonHablar;
         readonly Toggle escucha, deletreo;
-        readonly RectTransform modalEscribir, modalFrases, listaFrases;
-        readonly InputField campoEscribir;
+        readonly RectTransform modalEscribir, modalFrases, listaFrases, modalReporte;
+        readonly InputField campoEscribir, campoReporte;
+        readonly List<Button> botonesTipo = new List<Button>();
+        string tipoReporte = Reporte.TraduccionIncorrecta;
         readonly Text nivelMicrofono;
         List<FraseRapida> frases = new List<FraseRapida>();
         string direccionFrases = "oyente_a_sordo";
@@ -197,7 +202,9 @@ namespace LSRD.App
             escucha = UIFabrica.Interruptor(filaEscucha, "Escucha automática del empleado", false, v => AlEscuchaAutomatica?.Invoke(v), Tema.Pequeno);
             UIFabrica.Elemento(escucha, 80, -1, 1);
             nivelMicrofono = UIFabrica.Texto(filaEscucha, "", Tema.Mini, Tema.TextoSecundario, TextAnchor.MiddleRight);
-            UIFabrica.Elemento(nivelMicrofono, 80, 260);
+            UIFabrica.Elemento(nivelMicrofono, 80, 200);
+            UIFabrica.Elemento(UIFabrica.Boton(filaEscucha, "Reportar", () => MostrarReporte(true), Tema.SuperficieClara, null, Tema.Mini, 0), 80, 190);
+            UIFabrica.Elemento(UIFabrica.Boton(filaEscucha, "Emergencia", () => AlEmergencia?.Invoke(), Tema.Peligro, Tema.Texto, Tema.Mini, 0), 80, 220);
 
             // ------------------------------------------------ ventanas
             modalEscribir = Modal("EscribirMensaje", out var cuerpoEscribir);
@@ -227,7 +234,42 @@ namespace LSRD.App
             listaFrases = UIFabrica.Desplazable(zonaLista, "Lista", 12, 8);
             UIFabrica.Estirar((RectTransform)listaFrases.parent);
             UIFabrica.Boton(cuerpoFrases, "Cerrar", () => MostrarFrases(false), Tema.SuperficieClara, null, Tema.Normal);
+
+            modalReporte = Modal("ReportarProblema", out var cuerpoReporte);
+            UIFabrica.Texto(cuerpoReporte, "Reportar un problema", Tema.Normal, Tema.Texto, TextAnchor.MiddleLeft, FontStyle.Bold);
+            UIFabrica.Elemento(UIFabrica.Texto(cuerpoReporte,
+                "Se envía solo el texto de la última traducción, nunca audio ni video. Una persona del equipo lingüístico lo revisa.",
+                Tema.Mini, Tema.TextoSecundario, TextAnchor.UpperLeft), 90);
+            foreach (var tipo in Reporte.Tipos)
+            {
+                var t = tipo;
+                botonesTipo.Add(UIFabrica.Boton(cuerpoReporte, Reporte.Rotulo(t), () => ElegirTipo(t), Tema.SuperficieClara, null, Tema.Pequeno, 96));
+            }
+            campoReporte = UIFabrica.Campo(cuerpoReporte, "¿Qué quiso decir? (opcional)", "", null, InputField.ContentType.Standard, Tema.Pequeno, 180);
+            campoReporte.lineType = InputField.LineType.MultiLineNewline;
+            campoReporte.characterLimit = Reporte.MaximoTexto;
+            var filaR = UIFabrica.Nodo(cuerpoReporte, "Acciones");
+            UIFabrica.Horizontal(filaR.gameObject, 16);
+            UIFabrica.Elemento(filaR, 110);
+            UIFabrica.Boton(filaR, "Cancelar", () => MostrarReporte(false), Tema.SuperficieClara, null, Tema.Normal, 0);
+            UIFabrica.Boton(filaR, "Enviar reporte", () =>
+            {
+                var texto = campoReporte.text.Trim();
+                MostrarReporte(false);
+                AlReportar?.Invoke(tipoReporte, texto);
+                campoReporte.text = "";
+            }, Tema.Acento, Tema.Fondo, Tema.Normal, 0);
+            ElegirTipo(Reporte.TraduccionIncorrecta);
         }
+
+        void ElegirTipo(string tipo)
+        {
+            tipoReporte = tipo;
+            for (int i = 0; i < botonesTipo.Count; i++)
+                botonesTipo[i].image.color = Reporte.Tipos[i] == tipo ? Tema.AcentoOscuro : Tema.SuperficieClara;
+        }
+
+        void MostrarReporte(bool visible) => modalReporte.gameObject.SetActive(visible);
 
         Image Indicador(Transform padre, string nombre, out Text texto)
         {

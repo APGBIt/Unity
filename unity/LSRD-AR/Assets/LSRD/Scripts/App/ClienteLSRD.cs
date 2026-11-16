@@ -124,6 +124,11 @@ namespace LSRD.App
             yield return Enviar(PostJson("/v1/recolecciones", jsonMuestra), (d, e) => fin(e));
         }
 
+        public IEnumerator EnviarReporte(string jsonReporte, Action<string> fin)
+        {
+            yield return Enviar(PostJson("/v1/retroalimentacion", jsonReporte), (d, e) => fin(e));
+        }
+
         public IEnumerator IndiceAvatar(Action<List<KeyValuePair<string, string>>, string> fin)
         {
             yield return Enviar(Preparar(UnityWebRequest.Get(Url + "/v1/avatar/indice")), (d, e) =>

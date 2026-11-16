@@ -18,6 +18,8 @@ def _ruta(nombre: str, defecto: Path) -> Path:
 class Config:
     vocabulario: Path = field(default_factory=lambda: _ruta("LSRD_VOCABULARIO", RAIZ / "vocabulario" / "vocabulario_mvp.csv"))
     frases: Path = field(default_factory=lambda: _ruta("LSRD_FRASES", RAIZ / "vocabulario" / "frases_mvp.csv"))
+    emergencias: Path = field(default_factory=lambda: _ruta("LSRD_EMERGENCIAS", RAIZ / "vocabulario" / "emergencias.csv"))
+    cobertura: Path = field(default_factory=lambda: _ruta("LSRD_COBERTURA", RAIZ / "vocabulario" / "cobertura_diccionario_oficial.csv"))
     datos: Path = field(default_factory=lambda: _ruta("LSRD_DATOS", RAIZ / "servidor" / "datos"))
     # Clave que la app envía en la cabecera X-Clave-LSRD. Sin clave, el servidor
     # solo acepta conexiones (modo desarrollo) y lo advierte en /salud.
@@ -31,3 +33,4 @@ class Config:
     modelo_whisper: str = field(default_factory=lambda: os.environ.get("LSRD_WHISPER", "small"))
     max_bytes_audio: int = 10 * 1024 * 1024
     max_bytes_muestra: int = 8 * 1024 * 1024
+    max_bytes_reporte: int = 16 * 1024

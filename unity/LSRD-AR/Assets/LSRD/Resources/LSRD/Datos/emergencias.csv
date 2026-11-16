@@ -1,0 +1,17 @@
+id,espanol,glosas,direccion,rapida,estado,contexto
+E001,Necesito ayuda urgente.,,sordo_a_oyente,1,pendiente,pedir ayuda
+E002,"Llame al 9-1-1, por favor.",,sordo_a_oyente,1,pendiente,pedir ayuda
+E003,"Soy una persona sorda. Por favor, escríbame o hábleme despacio.",,sordo_a_oyente,1,pendiente,identificarse
+E004,Necesito un intérprete de lengua de señas.,,sordo_a_oyente,1,pendiente,identificarse
+E005,Necesito un médico.,,sordo_a_oyente,1,pendiente,salud
+E006,Me siento muy mal.,,sordo_a_oyente,1,pendiente,salud
+E007,Tuve un accidente.,,sordo_a_oyente,1,pendiente,accidente
+E008,Me robaron.,,sordo_a_oyente,1,pendiente,seguridad
+E009,Estoy perdido. Necesito llegar a esta dirección.,,sordo_a_oyente,1,pendiente,ubicación
+E010,"Por favor, avise a mi familia.",,sordo_a_oyente,1,pendiente,familia
+E011,¿Está usted bien?,,oyente_a_sordo,1,pendiente,primer contacto
+E012,¿Necesita un médico?,,oyente_a_sordo,1,pendiente,primer contacto
+E013,La ayuda viene en camino.,,oyente_a_sordo,1,pendiente,tranquilizar
+E014,"Quédese aquí, por favor.",,oyente_a_sordo,1,pendiente,instrucción
+E015,"Salga del edificio ahora, por favor.",,oyente_a_sordo,1,pendiente,evacuación
+E016,"Venga conmigo, por favor.",,oyente_a_sordo,1,pendiente,instrucción

@@ -1,9 +1,11 @@
-# LSRD · Traductor de Lengua de Señas Dominicana para atención al público
+# Señas RD · Traductor de Lengua de Señas Dominicana
 
 Prototipo de app (Unity, Android/iOS) que traduce en las dos direcciones en un mostrador de atención al público:
 
 - **Persona sorda → empleado:** la cámara lee la LSRD, la app arma la frase y la dice en voz alta en español dominicano.
 - **Empleado → persona sorda:** el empleado habla (o escribe), el servidor transcribe y traduce a glosas LSRD, y un avatar las firma.
+
+Además incluye un **acceso rápido de emergencia** que funciona sin conexión, un **diccionario** consultable y un botón para **reportar** traducciones incorrectas. Los requisitos del producto y su estado están en [docs/REQUISITOS.md](docs/REQUISITOS.md).
 
 > **Estado honesto.** El software está completo de punta a punta y probado, pero **todavía no reconoce LSRD real**: no existe un conjunto de datos público de LSRD. Los modelos incluidos son de **demostración**, entrenados con datos sintéticos (clases `DEMO-01…DEMO-20`), para probar cámara, segmentación, inferencia e interfaz. El reconocimiento real llega cuando se graben personas sordas con el **modo recolección** de la app y se entrene con `ml/scripts/entrenar.py`. El avatar muestra tarjetas con la palabra hasta que existan grabaciones de referencia de firmantes nativos.
 
@@ -11,11 +13,12 @@ Prototipo de app (Unity, Android/iOS) que traduce en las dos direcciones en un m
 
 | Carpeta | Qué hay | Guía |
 | --- | --- | --- |
-| `vocabulario/` | Vocabulario del MVP (155 señas, 11 números, 27 letras) y 50 frases de mostrador. Todo marcado *pendiente de validación* por la comunidad sorda. | [vocabulario/README.md](vocabulario/README.md) |
+| `vocabulario/` | Vocabulario del MVP (155 señas, 11 números, 27 letras), 50 frases de mostrador, 16 de emergencia y el cruce con el Diccionario Oficial. Todo marcado *pendiente de validación* por la comunidad sorda. | [vocabulario/README.md](vocabulario/README.md) |
+| `fuentes/` | Catálogo de fuentes de video de LSRD con el estado de su permiso de uso. | [fuentes/README.md](fuentes/README.md) |
 | `unity/LSRD-AR/` | La app: cámara, detector MediaPipe holístico, reconocimiento con Unity Inference Engine, interfaz, avatar, modo recolección. | [unity/LSRD-AR/README.md](unity/LSRD-AR/README.md) |
-| `servidor/` | API FastAPI: traducción glosas ↔ español (memoria validada → Claude opcional → literal), voz a texto (Whisper opcional), recepción de grabaciones y biblioteca del avatar. | [servidor/README.md](servidor/README.md) |
-| `ml/` | Canal de entrenamiento en Python: formato de puntos clave, segmentación, modelo Transformer, evaluación con firmantes no vistos, exportación ONNX y pruebas de paridad. | [ml/README.md](ml/README.md) |
-| `docs/` | Arquitectura, protocolo de recolección con la comunidad y plantilla de consentimiento. | [docs/](docs/) |
+| `servidor/` | API FastAPI: traducción glosas ↔ español (memoria validada → Claude opcional → literal), voz a texto (Whisper opcional), recepción de grabaciones, biblioteca del avatar, diccionario y reportes de retroalimentación. | [servidor/README.md](servidor/README.md) |
+| `ml/` | Canal de entrenamiento en Python: formato de puntos clave, segmentación, modelo Transformer, evaluación con firmantes no vistos, exportación ONNX, pruebas de paridad y canal de videos (de un video con permiso a muestras de entrenamiento). | [ml/README.md](ml/README.md) |
+| `docs/` | Requisitos y su estado, arquitectura, protocolo de recolección con la comunidad y plantilla de consentimiento. | [docs/](docs/) |
 | `herramientas/` | Verificación del código C# sin Unity (pruebas del núcleo y compilación de todos los scripts). | [herramientas/README.md](herramientas/README.md) |
 
 ## Cómo encaja todo
@@ -39,30 +42,46 @@ Sin servidor la app sigue funcionando con traducción literal local y frases rá
 1. **Probar el canal de entrenamiento** (Python 3.10+):
    ```bash
    cd ml && pip install -r requirements.txt
-   python -m pytest -q                          # 32 pruebas
+   python -m pytest -q                          # 45 pruebas
    python scripts/demo_sintetico.py --unity     # entrena y exporta los modelos de demostración
    ```
 2. **Levantar el servidor**:
    ```bash
    cd servidor && pip install -r requirements.txt
-   python -m pytest -q                          # 17 pruebas
+   python -m pytest -q                          # 21 pruebas
    uvicorn app.main:app --host 0.0.0.0 --port 8000
    ```
 3. **Abrir la app** en Unity 6: ver [unity/LSRD-AR/README.md](unity/LSRD-AR/README.md). Sin instalar MediaPipe ya se puede pulsar Play: el detector simulado reproduce grabaciones sintéticas y el modelo de demostración las reconoce.
 
 ## Qué se verificó (sin abrir Unity)
 
-- 32 pruebas del canal de entrenamiento, incluida la exportación ONNX (opset 15) con diferencia máxima de 3·10⁻⁷ frente a PyTorch.
-- 17 pruebas del servidor (traducción, memoria validada, validación de la salida del modelo de lenguaje, voz, grabaciones, avatar, clave de acceso y rutas maliciosas).
-- 20 pruebas del núcleo C# de la app ejecutadas con .NET, con **paridad exacta Python ↔ C#** en remuestreo, segmentación, selección de mano y empaquetado de MediaPipe.
+- 45 pruebas del canal de entrenamiento, incluidos el canal de videos, el modo semilla y la exportación ONNX (opset 15) con diferencia máxima de 3·10⁻⁷ frente a PyTorch.
+- 21 pruebas del servidor (emergencias, diccionario, reportes, traducción, memoria validada, validación de la salida del modelo de lenguaje, voz, grabaciones, avatar, clave de acceso y rutas maliciosas).
+- 24 pruebas del núcleo C# de la app ejecutadas con .NET, con **paridad exacta Python ↔ C#** en remuestreo, segmentación, selección de mano y empaquetado de MediaPipe.
 - Compilación de todos los scripts de Unity en tres variantes (editor, Android, iOS sin paquetes) contra las firmas de Unity 6, MediaPipe Unity Plugin 0.16.3 e Inference Engine 2.6.
 - Flujo completo simulado: 12 señas sintéticas de firmantes nunca vistos → segmentador → modelo de demostración: 12 de 12 correctas.
 
 Lo que **no** se pudo verificar aquí y hay que probar en Unity/dispositivo: la cámara real, MediaPipe en el teléfono, el rendimiento, la voz del sistema y el aspecto final de la interfaz.
 
+## Entrenar con videos
+
+`fuentes/fuentes.csv` lista de dónde pueden salir videos de LSRD y si hay permiso para usarlos. El Diccionario Oficial en línea (unas 1.466 señas) es la mejor fuente, pero tiene derechos reservados del CONADIS: queda bloqueada hasta que exista autorización escrita. Con el permiso resuelto:
+
+```bash
+cd ml
+python scripts/videos.py fuentes        # qué se puede usar
+python scripts/videos.py recolectar     # descarga e inventario
+python scripts/videos.py proponer --modelos-mediapipe modelos_mp/   # corta cada video en señas y sugiere la glosa
+# una persona revisa datos/videos/anotaciones.csv
+python scripts/videos.py muestras
+python scripts/entrenar.py --datos datos/extraidos --salida modelos/semilla --semilla --unity
+```
+
+Un diccionario tiene una o dos personas por seña, así que de ahí sale un **modelo semilla**: útil para arrancar y para animar el avatar, no validado con personas nuevas. La app lo muestra como «MODELO SEMILLA».
+
 ## Próximos pasos (Fase 0 del plan)
 
-1. Convenio con ANSORDO y CONADIS; validar el vocabulario y las frases con intérpretes.
+1. Convenio con ANSORDO y CONADIS: autorización para usar los videos del Diccionario Oficial y validación del vocabulario y las frases con intérpretes.
 2. Sesiones de grabación con al menos 30 firmantes sordos de varias regiones (modo recolección, protocolo en `docs/`).
 3. Entrenar con datos reales, evaluar con firmantes no vistos (meta ≥ 85 %) y publicar grabaciones de referencia para el avatar.
 4. Piloto en un mostrador real.

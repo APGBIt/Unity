@@ -279,3 +279,66 @@ def test_cliente_llm_arma_la_peticion(monkeypatch, vocab, frases_validadas):
     assert "INTERPRETE NECESITAR" in capturado["system"][0]["text"]  # ejemplos validados en el prompt
     assert "CEDULA: cédula" in capturado["system"][0]["text"]
     assert llm.glosas_a_texto(["CITA", "TENER", "TU"])["texto"] == "¿Tiene cita?"
+
+
+# ---------------------------------------------------------------- emergencias, diccionario y retroalimentación
+
+def test_emergencias_en_las_dos_direcciones(tmp_path):
+    c = _app(tmp_path)
+    todas = c.get("/v1/emergencias").json()["frases"]
+    assert len(todas) >= 12 and all(f["rapida"] for f in todas)
+    sordo = c.get("/v1/emergencias", params={"direccion": "sordo_a_oyente"}).json()["frases"]
+    assert any("9-1-1" in f["espanol"] for f in sordo)
+    assert {f["direccion"] for f in todas} == {"sordo_a_oyente", "oyente_a_sordo"}
+    # Ninguna se presenta como validada mientras un intérprete no escriba las glosas.
+    assert not any(f["validada"] for f in todas)
+
+
+def test_diccionario_busca_sin_tildes_y_trae_la_referencia_oficial(tmp_path):
+    c = _app(tmp_path)
+    d = c.get("/v1/diccionario").json()
+    assert d["total"] == 193 and "tramites" in d["categorias"]
+    assert not any(f["tipo"] == "fondo" for f in d["fichas"])
+    r = c.get("/v1/diccionario", params={"buscar": "CEDULA"}).json()
+    assert [f["glosa"] for f in r["fichas"]] == ["CEDULA"]
+    assert r["fichas"][0]["referencia_oficial"] is None and r["fichas"][0]["tiene_animacion"] is False
+    r = c.get("/v1/diccionario", params={"buscar": "gracias"}).json()
+    ficha = next(f for f in r["fichas"] if f["glosa"] == "GRACIAS")
+    assert ficha["referencia_oficial"]["url"] == "https://diccionariolsrd.cc/diccionario/gracias/"
+    solo = c.get("/v1/diccionario", params={"categoria": "saludos"}).json()
+    assert solo["total"] >= 4 and all(f["categoria"] == "saludos" for f in solo["fichas"])
+
+
+def test_retroalimentacion_queda_pendiente_y_no_toca_el_vocabulario(tmp_path):
+    c = _app(tmp_path)
+    antes = c.get("/v1/vocabulario").json()
+    reporte = {"id": "rep-000001", "tipo": "traduccion_incorrecta", "direccion": "senas_a_texto",
+               "texto_mostrado": "Necesito una cita.", "glosas": ["CITA", "NECESITAR"],
+               "correccion": "Quise decir: ¿tiene cita?", "fuente": "literal"}
+    r = c.post("/v1/retroalimentacion", json=reporte)
+    assert r.status_code == 200 and r.json() == {"guardado": "rep-000001", "estado": "pendiente"}
+    assert c.post("/v1/retroalimentacion", json={"tipo": "inventado", "texto_mostrado": "x"}).status_code == 422
+    assert c.post("/v1/retroalimentacion", json={"tipo": "otro"}).status_code == 422
+    assert c.post("/v1/retroalimentacion", json={"tipo": "otro", "correccion": "x" * 501}).status_code == 422
+    assert c.post("/v1/retroalimentacion", json={"tipo": "otro", "id": "../x", "correccion": "x"}).status_code == 422
+
+    lista = c.get("/v1/retroalimentacion", params={"estado": "pendiente"}).json()["reportes"]
+    assert len(lista) == 1 and lista[0]["correccion"].startswith("Quise decir")
+    resumen = c.get("/v1/retroalimentacion/resumen").json()
+    assert resumen["por_estado"] == {"pendiente": 1}
+    assert resumen["glosas_mas_reportadas"][0] == {"glosa": "CITA", "reportes": 1}
+
+    assert c.post("/v1/retroalimentacion/rep-000001/revision", json={"estado": "listo", "revisor": "Ana"}).status_code == 422
+    assert c.post("/v1/retroalimentacion/no-existe/revision", json={"estado": "aceptado", "revisor": "Ana"}).status_code == 404
+    rev = c.post("/v1/retroalimentacion/rep-000001/revision",
+                 json={"estado": "aceptado", "revisor": "Ana (intérprete)", "nota": "Falta la seña de pregunta."}).json()
+    assert rev["estado"] == "aceptado" and rev["revision"]["revisor"].startswith("Ana")
+    assert c.get("/v1/retroalimentacion", params={"estado": "pendiente"}).json()["reportes"] == []
+    # Revisar un reporte no cambia nada más: el vocabulario sigue igual.
+    assert c.get("/v1/vocabulario").json() == antes
+
+
+def test_retroalimentacion_exige_clave(tmp_path):
+    c = _app(tmp_path, clave="secreta")
+    assert c.post("/v1/retroalimentacion", json={"tipo": "otro", "correccion": "x"}).status_code == 401
+    assert c.get("/v1/retroalimentacion").status_code == 401

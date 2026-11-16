@@ -347,5 +347,87 @@ namespace LSRD.Pruebas
             var plano = Remuestreo.Aplanar(r.Select(c => c.Datos).ToList());
             Assert.AreEqual(FormatoLandmarks.LongitudSecuencia * FormatoLandmarks.ValoresPorCuadro, plano.Length);
         }
+
+        [Test]
+        public void Diccionario_BuscaSinTildesYPorTema()
+        {
+            var d = DiccionarioLocal.Crear(DatosPrueba.Vocabulario(),
+                DatosPrueba.Leer("Assets/LSRD/Resources/LSRD/Datos/cobertura_diccionario_oficial.csv"));
+            Assert.AreEqual(193, d.Fichas.Count);               // todo menos la clase de fondo
+            Assert.IsFalse(d.Fichas.Any(f => f.Entrada.EsFondo));
+            Assert.IsTrue(d.Categorias.Contains("tramites"));
+
+            // «¿CEDULA?» encuentra «cédula» aunque se escriba sin tilde y con signos.
+            var r = d.Buscar("¿CEDULA?");
+            Assert.AreEqual("CEDULA", r[0].Entrada.Glosa);
+            Assert.IsFalse(r[0].TieneReferenciaOficial);
+
+            // Las que empiezan por el texto van antes que las que solo lo contienen.
+            var buen = d.Buscar("buen").Select(f => f.Entrada.Glosa).ToList();
+            Assert.IsTrue(buen.IndexOf("BUENOS-DIAS") >= 0 && buen.IndexOf("BUENOS-DIAS") < 6);
+            Assert.AreEqual("DIA", d.Buscar("dias")[0].Entrada.Glosa);   // «días» antes que «buenos días»
+
+            // También se encuentra por sinónimo.
+            Assert.IsTrue(d.Buscar("muéstreme").Any(f => f.Entrada.Glosa == "MOSTRAR"));
+
+            var saludos = d.Buscar("", "saludos");
+            Assert.IsTrue(saludos.Count >= 4 && saludos.All(f => f.Entrada.Categoria == "saludos"));
+            Assert.AreEqual(0, d.Buscar("xilófono").Count);
+
+            var gracias = d.PorGlosa("GRACIAS");
+            Assert.AreEqual("https://diccionariolsrd.cc/diccionario/gracias/", gracias.UrlOficial);
+            Assert.IsFalse(gracias.Validada);                    // nada está validado todavía
+            // Sin archivo de cobertura el diccionario funciona igual, sin referencias.
+            Assert.IsFalse(DiccionarioLocal.Crear(DatosPrueba.Vocabulario()).PorGlosa("GRACIAS").TieneReferenciaOficial);
+        }
+
+        [Test]
+        public void Emergencias_CompletasEnLasDosDirecciones()
+        {
+            var e = VocabularioLocal.FrasesDesdeCsv(DatosPrueba.Leer("Assets/LSRD/Resources/LSRD/Datos/emergencias.csv"));
+            Assert.IsTrue(e.Count(f => f.Direccion == "sordo_a_oyente") >= 8);
+            Assert.IsTrue(e.Count(f => f.Direccion == "oyente_a_sordo") >= 4);
+            Assert.IsTrue(e.All(f => f.Rapida && f.Espanol.Length > 0 && !f.Validada));
+            Assert.AreEqual(e.Count, e.Select(f => f.Id).Distinct().Count());
+            Assert.IsTrue(e.Any(f => f.Espanol.Contains("9-1-1")));
+        }
+
+        [Test]
+        public void Reporte_SoloTextoYConLimites()
+        {
+            var r = Reporte.Nuevo(Reporte.TraduccionIncorrecta, Reporte.SenasATexto, "  Necesito una cita.  ",
+                new[] { "CITA", "NECESITAR" }, new string('x', 900), new DateTime(2026, 11, 16, 12, 0, 0, DateTimeKind.Utc), "rep-000001");
+            Assert.AreEqual("Necesito una cita.", r.TextoMostrado);
+            Assert.AreEqual(Reporte.MaximoTexto, r.Correccion.Length);
+            var d = Json.Objeto(r.AJson());
+            Assert.AreEqual("rep-000001", Json.Cad(d, "id"));
+            Assert.AreEqual("traduccion_incorrecta", Json.Cad(d, "tipo"));
+            Assert.AreEqual("senas_a_texto", Json.Cad(d, "direccion"));
+            Assert.AreEqual("2026-11-16T12:00:00Z", Json.Cad(d, "fecha_utc"));
+            CollectionAssert.AreEqual(new[] { "CITA", "NECESITAR" }, Json.Cadenas(d, "glosas").ToArray());
+            // El reporte no tiene dónde llevar audio, video ni puntos clave.
+            CollectionAssert.AreEqual(
+                new[] { "correccion", "direccion", "fecha_utc", "fuente", "glosas", "id", "modelo", "texto_mostrado", "tipo", "version_app" },
+                d.Keys.OrderBy(k => k, StringComparer.Ordinal).ToArray());
+
+            Assert.IsTrue(Reporte.Nuevo(Reporte.Otro, "", "", null, "  ").Vacio);
+            Assert.IsFalse(Reporte.Nuevo(Reporte.AvatarIncorrecto, Reporte.TextoASenas, "", new[] { "HOLA" }, "").Vacio);
+            Assert.IsTrue(Reporte.Nuevo(Reporte.Otro, "", "a", null, "").Id != Reporte.Nuevo(Reporte.Otro, "", "a", null, "").Id);
+            Assert.Throws<ArgumentException>(() => Reporte.Nuevo("inventado", "", "a", null, ""));
+            foreach (var t in Reporte.Tipos) Assert.IsTrue(Reporte.Rotulo(t).Length > 0);
+        }
+
+        [Test]
+        public void InfoModelo_DistingueSemillaDeDemostracion()
+        {
+            string Info(string nota) => "{\"modelo\":\"senas\",\"formato\":\"" + FormatoLandmarks.Version +
+                "\",\"clases\":[\"HOLA\",\"GRACIAS\"],\"nota\":" + Json.Cadena(nota) + "}";
+            var semilla = InfoModelo.DesdeJson(Info("MODELO SEMILLA entrenado con 12 tomas de 2 persona(s)."));
+            Assert.IsTrue(semilla.EsSemilla && !semilla.EsDemostracion);
+            var demo = InfoModelo.DesdeJson(Info("MODELO DE DEMOSTRACIÓN entrenado con datos sintéticos."));
+            Assert.IsTrue(demo.EsDemostracion && !demo.EsSemilla);
+            var real = InfoModelo.DesdeJson(Info(""));
+            Assert.IsFalse(real.EsSemilla || real.EsDemostracion);
+        }
     }
 }

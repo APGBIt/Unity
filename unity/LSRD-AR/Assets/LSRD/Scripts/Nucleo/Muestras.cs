@@ -138,6 +138,8 @@ namespace LSRD.Nucleo
         public double Exactitud = double.NaN;
 
         public bool EsDemostracion => Nota.IndexOf("DEMOSTRACIÓN", StringComparison.OrdinalIgnoreCase) >= 0;
+        /// <summary>Entrenado con pocas personas (videos): sin validar con firmantes nuevos.</summary>
+        public bool EsSemilla => Nota.IndexOf("SEMILLA", StringComparison.OrdinalIgnoreCase) >= 0;
 
         public static InfoModelo DesdeJson(string texto)
         {

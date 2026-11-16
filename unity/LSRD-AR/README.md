@@ -44,6 +44,9 @@ Para iOS, compile el proyecto de Xcode; la voz usa `Assets/LSRD/Plugins/iOS/LSRD
 ## Modos de la app
 
 - **Conversación.** El dispositivo mira a la persona sorda. Lo que firma aparece junto a su cabeza (realidad aumentada) y abajo, con la confianza; las señas dudosas muestran alternativas para tocar. Al pausar, la app traduce y lo dice en voz alta. El empleado mantiene *Mantener para hablar* (o activa la escucha automática), escribe, o usa frases rápidas; el avatar firma la respuesta. *Deletreo* activa el alfabeto manual.
+- **Emergencia.** Botón rojo en el inicio y en la conversación. La persona sorda toca una frase («Necesito ayuda urgente», «Llame al 9-1-1»…) y el teléfono la muestra en letras grandes y la dice en voz alta. Funciona sin servidor, sin cámara y sin modelo.
+- **Diccionario.** Búsqueda por palabra o por tema entre las 193 fichas del vocabulario. Cada ficha indica si la seña está validada, si aparece en el Diccionario Oficial (con enlace) y reproduce la seña cuando hay una grabación aprobada.
+- **Reportar.** En la conversación y en cada ficha. Envía solo el texto de la última traducción y lo que la persona quiso decir; nunca audio ni video. Sin conexión queda guardado y se envía después.
 - **Recolección de datos.** Consentimiento, perfil seudónimo y grabación guiada seña por seña, con revisión de cada toma. Solo guarda puntos clave (no video). Las tomas se envían al servidor cuando hay conexión.
 - **Ajustes.** Servidor y clave, cámara (frontal, espejo, rotación), umbrales, voz y velocidad del avatar.
 

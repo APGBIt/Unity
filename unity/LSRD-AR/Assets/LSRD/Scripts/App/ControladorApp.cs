@@ -14,7 +14,7 @@ namespace LSRD.App
     /// </summary>
     public sealed class ControladorApp : MonoBehaviour
     {
-        enum Vista { Inicio, Conversacion, Recoleccion, Ajustes }
+        enum Vista { Inicio, Conversacion, Recoleccion, Ajustes, Diccionario, Emergencias }
 
         AjustesApp ajustes;
         VocabularioLocal vocab;
@@ -23,14 +23,16 @@ namespace LSRD.App
         ClienteLSRD cliente;
         MotorReconocimiento motor;
         BibliotecaSenas biblioteca;
-        ColaEnvio cola;
+        ColaEnvio cola, colaReportes;
+        DiccionarioLocal diccionario;
+        List<FraseRapida> emergencias = new List<FraseRapida>();
 
         FuenteCamara camara;
         IDetectorLandmarks detector;
         MonoBehaviour componenteDetector;
         Microfono microfono;
         VozSintetizada voz;
-        AvatarEsquematico avatar, avatarRevision;
+        AvatarEsquematico avatar, avatarRevision, avatarDiccionario;
         AvatarHumanoide humanoide;
         ReproductorPlan reproductor;
 
@@ -38,7 +40,13 @@ namespace LSRD.App
         PantallaConversacion conversacion;
         PantallaRecoleccion recoleccion;
         PantallaAjustes pantallaAjustes;
-        Vista vista;
+        PantallaDiccionario pantallaDiccionario;
+        PantallaEmergencias pantallaEmergencias;
+        Vista vista, vistaAnterior;
+
+        // Última traducción mostrada: es lo único que acompaña a un reporte.
+        string ultimoTexto = "", ultimaFuente = "", ultimaDireccion = "";
+        List<string> ultimasGlosas = new List<string>();
 
         SesionRecoleccion sesion;
         CuadroLandmarks ultimoCuadro;
@@ -61,11 +69,17 @@ namespace LSRD.App
             var csvFrases = Resources.Load<TextAsset>("LSRD/Datos/frases_mvp");
             if (csvFrases != null) frases = VocabularioLocal.FrasesDesdeCsv(csvFrases.text);
             traductorLocal = new TraductorLocal(vocab, frases);
+            var csvCobertura = Resources.Load<TextAsset>("LSRD/Datos/cobertura_diccionario_oficial");
+            diccionario = DiccionarioLocal.Crear(vocab, csvCobertura != null ? csvCobertura.text : null);
+            var csvEmergencias = Resources.Load<TextAsset>("LSRD/Datos/emergencias");
+            if (csvEmergencias != null) emergencias = VocabularioLocal.FrasesDesdeCsv(csvEmergencias.text);
 
             cliente = new ClienteLSRD(ajustes.UrlServidor, ajustes.Clave);
             biblioteca = new BibliotecaSenas();
             biblioteca.Cargar();
             cola = new ColaEnvio(Path.Combine(Application.persistentDataPath, "recolecciones"));
+            colaReportes = new ColaEnvio(Path.Combine(Application.persistentDataPath, "reportes"),
+                (c, json, fin) => c.EnviarReporte(json, fin));
 
             motor = new MotorReconocimiento(ajustes);
             motor.CargarModelos();
@@ -94,6 +108,8 @@ namespace LSRD.App
             inicio.AlConversacion += () => IrA(Vista.Conversacion);
             inicio.AlRecoleccion += () => IrA(Vista.Recoleccion);
             inicio.AlAjustes += () => IrA(Vista.Ajustes);
+            inicio.AlDiccionario += () => IrA(Vista.Diccionario);
+            inicio.AlEmergencia += () => IrA(Vista.Emergencias);
 
             conversacion = new PantallaConversacion(canvas.transform);
             conversacion.AlVolver += () => IrA(Vista.Inicio);
@@ -119,6 +135,29 @@ namespace LSRD.App
             conversacion.AlRepetirAvatar += () => reproductor.Repetir();
             conversacion.AlVelocidadAvatar += v => { reproductor.Velocidad = v; ajustes.VelocidadAvatar = v; };
             conversacion.CargarFrases(frases);
+            conversacion.AlEmergencia += () => IrA(Vista.Emergencias);
+            conversacion.AlReportar += (tipo, correccion) =>
+                conversacion.Avisar(GuardarReporte(tipo, ultimaDireccion, ultimoTexto, ultimasGlosas, correccion));
+
+            pantallaEmergencias = new PantallaEmergencias(canvas.transform);
+            pantallaEmergencias.Cargar(emergencias);
+            pantallaEmergencias.AlVolver += () => IrA(vistaAnterior == Vista.Conversacion ? Vista.Conversacion : Vista.Inicio);
+            pantallaEmergencias.AlDecir += f => voz.Hablar(f.Espanol, true);
+
+            pantallaDiccionario = new PantallaDiccionario(canvas.transform, diccionario, g => biblioteca.Tiene(g));
+            pantallaDiccionario.AlVolver += () => IrA(Vista.Inicio);
+            pantallaDiccionario.AlAbrirReferencia += url => Application.OpenURL(url);
+            pantallaDiccionario.AlCerrarFicha += () => avatarDiccionario.Detener();
+            pantallaDiccionario.AlVerSena += f =>
+            {
+                var m = biblioteca.Obtener(f.Entrada.Glosa);
+                if (m == null) { pantallaDiccionario.AvisoAnimacion("No se pudo abrir la grabación de esta seña."); return; }
+                pantallaDiccionario.AvisoAnimacion("");
+                avatarDiccionario.Velocidad = ajustes.VelocidadAvatar;
+                avatarDiccionario.Reproducir(m, null);
+            };
+            pantallaDiccionario.AlReportarSena += f => pantallaDiccionario.AvisoAnimacion(
+                GuardarReporte(Reporte.AvatarIncorrecto, Reporte.TextoASenas, f.Entrada.Espanol, new[] { f.Entrada.Glosa }, ""));
 
             recoleccion = new PantallaRecoleccion(canvas.transform, ajustes.CodigoFirmante);
             recoleccion.AlVolver += () => IrA(Vista.Inicio);
@@ -180,6 +219,8 @@ namespace LSRD.App
 
             avatarRevision = recoleccion.Revision.gameObject.AddComponent<AvatarEsquematico>();
             avatarRevision.Grafico = recoleccion.Revision;
+            avatarDiccionario = pantallaDiccionario.Vista.gameObject.AddComponent<AvatarEsquematico>();
+            avatarDiccionario.Grafico = pantallaDiccionario.Vista;
         }
 
         void AplicarAjustes()
@@ -198,7 +239,13 @@ namespace LSRD.App
 
         void IrA(Vista v)
         {
+            vistaAnterior = vista;
             vista = v;
+            pantallaDiccionario.Raiz.gameObject.SetActive(v == Vista.Diccionario);
+            pantallaEmergencias.Raiz.gameObject.SetActive(v == Vista.Emergencias);
+            if (v == Vista.Diccionario) pantallaDiccionario.Reiniciar();
+            else avatarDiccionario.Detener();
+            if (v == Vista.Emergencias) pantallaEmergencias.Reiniciar();
             inicio.Raiz.gameObject.SetActive(v == Vista.Inicio);
             conversacion.Raiz.gameObject.SetActive(v == Vista.Conversacion);
             recoleccion.Raiz.gameObject.SetActive(v == Vista.Recoleccion);
@@ -349,6 +396,7 @@ namespace LSRD.App
         void MostrarTraduccion(ResultadoTexto r, Frase f)
         {
             conversacion.MostrarTraduccion(r.Texto, f.Glosas, r.Fuente, r.Validada, f.ConfianzaMedia);
+            Recordar(Reporte.SenasATexto, r.Texto, f.Glosas, r.Fuente);
             if (ajustes.HablarTraduccion) voz.Hablar(r.Texto);
             Vibrar();
         }
@@ -392,6 +440,7 @@ namespace LSRD.App
                 }
                 if (string.IsNullOrWhiteSpace(r.Transcripcion ?? r.Texto)) { conversacion.MostrarEmpleado("(no se entendió)", "", false, null); return; }
                 conversacion.MostrarEmpleado(r.Transcripcion ?? r.Texto, r.Fuente, r.Validada, r.Advertencias);
+                Recordar(Reporte.TextoASenas, r.Transcripcion ?? r.Texto, r.Glosas, r.Fuente);
                 reproductor.Reproducir(r.Plan);
             }));
         }
@@ -404,6 +453,7 @@ namespace LSRD.App
                 {
                     if (r == null) r = traductorLocal.TextoAGlosas(texto);
                     conversacion.MostrarEmpleado(texto, r.Fuente, r.Validada, r.Advertencias);
+                    Recordar(Reporte.TextoASenas, texto, r.Glosas, r.Fuente);
                     reproductor.Reproducir(r.Plan);
                 }));
             }
@@ -411,6 +461,7 @@ namespace LSRD.App
             {
                 var r = traductorLocal.TextoAGlosas(texto);
                 conversacion.MostrarEmpleado(texto, r.Fuente, r.Validada, r.Advertencias);
+                    Recordar(Reporte.TextoASenas, texto, r.Glosas, r.Fuente);
                 reproductor.Reproducir(r.Plan);
             }
         }
@@ -485,10 +536,36 @@ namespace LSRD.App
 
         // ------------------------------------------------------------------ estado
 
+        // ------------------------------------------------------------------ retroalimentación
+
+        void Recordar(string direccion, string texto, IEnumerable<string> glosas, string fuente)
+        {
+            ultimaDireccion = direccion;
+            ultimoTexto = texto ?? "";
+            ultimaFuente = fuente ?? "";
+            ultimasGlosas = glosas != null ? new List<string>(glosas) : new List<string>();
+        }
+
+        /// <summary>Guarda el reporte en el teléfono y lo envía si hay servidor. Devuelve el mensaje para la persona.</summary>
+        string GuardarReporte(string tipo, string direccion, string texto, IEnumerable<string> glosas, string correccion)
+        {
+            var r = Reporte.Nuevo(tipo, direccion, texto, glosas, correccion);
+            if (r.Vacio) return "No hay nada que reportar todavía: primero traduzca algo o escriba qué pasó.";
+            r.Fuente = ultimaFuente;
+            r.Modelo = motor.NotaModelos;
+            r.VersionApp = Application.version;
+            File.WriteAllText(Path.Combine(colaReportes.Pendientes, r.Id + ".json"), r.AJson());
+            if (cliente.Conectado) StartCoroutine(colaReportes.EnviarTodo(cliente, (n, e) => { }));
+            return cliente.Conectado ? "Reporte enviado. Gracias: una persona lo revisará."
+                                     : "Reporte guardado. Se enviará cuando haya conexión con el servidor.";
+        }
+
         IEnumerator ComprobarServidor()
         {
             yield return cliente.Salud(e =>
             {
+                if (cliente.Conectado && colaReportes.CantidadPendiente > 0)
+                    StartCoroutine(colaReportes.EnviarTodo(cliente, (n, err) => { }));
                 conversacion.EstadoServidor(cliente.Conectado, null);
                 if (vista == Vista.Inicio) MostrarEstadoInicio();
             });
@@ -499,6 +576,7 @@ namespace LSRD.App
             var partes = new List<string>();
             if (motor.ModoDeletreo) partes.Add("DELETREO");
             if (motor.ModelosDemostracion) partes.Add("MODELO DEMO");
+            if (motor.ModelosSemilla) partes.Add("MODELO SEMILLA");
             if (componenteDetector is DetectorSimulado) partes.Add("SIMULADO");
             conversacion.Modo(string.Join(" · ", partes));
         }
@@ -508,6 +586,7 @@ namespace LSRD.App
             var sb = new StringBuilder();
             if (!motor.PuedeReconocerSenas) sb.Append("Sin modelo de señas. ");
             if (motor.ModelosDemostracion) sb.Append("Modelo de demostración: no reconoce LSRD. ");
+            if (motor.ModelosSemilla) sb.Append("Modelo semilla: sin validar con personas nuevas; confirme cada traducción. ");
             if (!string.IsNullOrEmpty(estadoCaptura) && (componenteDetector is DetectorSimulado)) sb.Append(estadoCaptura);
             return sb.ToString();
         }
@@ -526,7 +605,7 @@ namespace LSRD.App
                           (cliente.Conectado ? $"conectado (traducción automática: {(cliente.TraduccionLlm ? "sí" : "no")}, voz: {(cliente.VozDisponible ? "sí" : "no")})" : "sin conexión (traducción literal local)"));
             sb.AppendLine($"Vocabulario: {vocab.Entradas.Count} entradas · frases validadas: {frases.Count(f => f.Validada)} de {frases.Count}");
             sb.AppendLine($"Avatar: {biblioteca.Cantidad} señas grabadas" + (humanoide != null ? " + avatar 3D" : ""));
-            sb.AppendLine($"Grabaciones pendientes de envío: {cola.CantidadPendiente}");
+            sb.AppendLine($"Grabaciones pendientes de envío: {cola.CantidadPendiente} · reportes pendientes: {colaReportes.CantidadPendiente}");
             inicio.MostrarEstado(sb.ToString());
         }
 

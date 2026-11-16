@@ -176,8 +176,12 @@ namespace LSRD.App
         public readonly string Rechazadas;
         public bool Enviando { get; private set; }
 
-        public ColaEnvio(string raiz)
+        /// <summary>Cómo se envía cada archivo; por defecto, como muestra de recolección.</summary>
+        readonly Func<ClienteLSRD, string, Action<string>, IEnumerator> enviar;
+
+        public ColaEnvio(string raiz, Func<ClienteLSRD, string, Action<string>, IEnumerator> enviar = null)
         {
+            this.enviar = enviar ?? ((c, json, fin) => c.EnviarMuestra(json, fin));
             Pendientes = Path.Combine(raiz, "pendientes");
             Enviadas = Path.Combine(raiz, "enviadas");
             Rechazadas = Path.Combine(raiz, "rechazadas");
@@ -198,7 +202,7 @@ namespace LSRD.App
             foreach (var ruta in Directory.GetFiles(Pendientes, "*.json"))
             {
                 string error = null;
-                yield return cliente.EnviarMuestra(File.ReadAllText(ruta), e => error = e);
+                yield return enviar(cliente, File.ReadAllText(ruta), e => error = e);
                 if (error == null)
                 {
                     Mover(ruta, Enviadas);

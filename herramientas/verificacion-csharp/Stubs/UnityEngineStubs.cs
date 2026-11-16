@@ -226,6 +226,7 @@ namespace UnityEngine
         public static int targetFrameRate { get; set; }
         public static AsyncOperation RequestUserAuthorization(UserAuthorization mode) => null;
         public static bool HasUserAuthorization(UserAuthorization mode) => true;
+        public static void OpenURL(string url) { }
     }
 
     public static class SleepTimeout { public const int NeverSleep = -1; public const int SystemSetting = -2; }
@@ -632,6 +633,7 @@ namespace UnityEngine.UI
 
     public class Selectable : UIBehaviour
     {
+        public Image image { get; set; }
         public Graphic targetGraphic { get; set; }
         public ColorBlock colors { get; set; }
         public bool interactable { get; set; }
@@ -663,6 +665,7 @@ namespace UnityEngine.UI
         public Graphic placeholder { get; set; }
         public ContentType contentType { get; set; }
         public LineType lineType { get; set; }
+        public int characterLimit { get; set; }
         public SubmitEvent onEndEdit { get; set; }
         public OnChangeEvent onValueChanged { get; set; }
     }

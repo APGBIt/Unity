@@ -13,6 +13,8 @@ python -m pytest -q
 | --- | --- |
 | `scripts/demo_sintetico.py --unity` | Genera datos sintéticos, entrena ambos modelos, evalúa con firmantes no vistos y exporta los modelos de **demostración** a la app. Tarda ~1 minuto en CPU. |
 | `scripts/entrenar.py --datos <carpeta> --salida modelos/v1 --unity` | Entrenamiento real con las grabaciones del modo recolección (`*.json`) o de videos (`*.npz`). Excluye clases con menos de 10 tomas o menos de 3 firmantes y escribe reportes en Markdown. |
+| `scripts/videos.py` | Canal de videos: `fuentes` (qué fuentes tienen permiso), `recolectar` (descarga e inventario), `proponer` (corta cada video en señas y sugiere la glosa por el título) y `muestras` (anotaciones revisadas → `.npz`). |
+| `scripts/entrenar.py … --semilla` | Entrena con pocas personas (videos de diccionario). Mide con tomas apartadas de las mismas personas y marca el modelo como SEMILLA. |
 | `scripts/extraer_videos.py` | Convierte videos (con consentimiento) en muestras `.npz` usando MediaPipe Tasks. Necesita un manifiesto CSV y los modelos `.task` de MediaPipe. |
 | `scripts/exportar_simulacion.py` | Grabaciones sintéticas para el detector simulado de la app. |
 | `scripts/generar_vectores_oro.py` | Vectores de prueba para la paridad Python ↔ C# (y modelos ONNX ↔ Inference Engine). |

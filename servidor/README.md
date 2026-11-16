@@ -41,6 +41,11 @@ Las reglas gramaticales que recibe el modelo están en `app/llm.py` (`REGLAS_LSR
 | POST | `/v1/recolecciones` | Recibe una grabación (exige consentimiento) |
 | GET | `/v1/recolecciones/resumen` | Avance de la recolección por glosa y firmante |
 | GET | `/v1/avatar/indice`, `/v1/avatar/{glosa}` | Grabaciones de referencia del avatar |
+| GET | `/v1/emergencias` | Frases de acceso rápido para emergencias |
+| GET | `/v1/diccionario` | Fichas del diccionario (`buscar`, `categoria`), con referencia oficial y si hay animación |
+| POST | `/v1/retroalimentacion` | Recibe un reporte (solo texto). Queda `pendiente` |
+| GET | `/v1/retroalimentacion`, `/v1/retroalimentacion/resumen` | Reportes por estado y señas más reportadas |
+| POST | `/v1/retroalimentacion/{id}/revision` | Quien valida lo marca `aceptado` o `descartado`. No cambia el vocabulario |
 
 ## Datos
 

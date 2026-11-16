@@ -20,11 +20,12 @@ from pydantic import BaseModel, Field
 from .config import Config
 from .memoria import Memoria
 from .recolecciones import Almacen, AvatarAlmacen, MuestraInvalida
+from .retroalimentacion import AlmacenReportes, ReporteInvalido
 from .traductor import Traductor
 from .vocabulario import Vocabulario
 from .voz import Transcriptor, VozNoDisponible
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 log = logging.getLogger("lsrd")
 
 
@@ -34,6 +35,21 @@ class PeticionTexto(BaseModel):
 
 class PeticionGlosas(BaseModel):
     glosas: list[str] = Field(..., max_length=60)
+
+
+class PeticionRevision(BaseModel):
+    estado: str
+    revisor: str = Field(..., max_length=80)
+    nota: str = Field("", max_length=500)
+
+
+def _leer_cobertura(ruta: Path) -> dict[str, dict]:
+    if not Path(ruta).exists():
+        return {}
+    import csv
+
+    with open(ruta, encoding="utf-8", newline="") as fh:
+        return {f["glosa"]: f for f in csv.DictReader(fh)}
 
 
 def crear_app(cfg: Optional[Config] = None, llm=None, transcriptor: Optional[Transcriptor] = None) -> FastAPI:
@@ -52,6 +68,9 @@ def crear_app(cfg: Optional[Config] = None, llm=None, transcriptor: Optional[Tra
     transcriptor = transcriptor or Transcriptor(cfg.modelo_whisper)
     almacen = Almacen(cfg.datos)
     avatar = AvatarAlmacen(cfg.datos)
+    reportes = AlmacenReportes(cfg.datos)
+    emergencias = Memoria(cfg.emergencias) if Path(cfg.emergencias).exists() else None
+    cobertura = _leer_cobertura(cfg.cobertura)
     glosas_validas = set(vocab.por_glosa)
     version_vocab = hashlib.sha256(Path(cfg.vocabulario).read_bytes()).hexdigest()[:12]
 
@@ -86,6 +105,66 @@ def crear_app(cfg: Optional[Config] = None, llm=None, transcriptor: Optional[Tra
         lista = memoria.rapidas(direccion) if solo_rapidas else [
             f for f in memoria.frases if direccion is None or f.direccion == direccion]
         return {"frases": [f.a_dict() for f in lista]}
+
+    @app.get("/v1/emergencias", dependencies=protegido)
+    def frases_emergencia(direccion: Optional[str] = None) -> dict:
+        lista = emergencias.frases if emergencias else []
+        return {"frases": [f.a_dict() for f in lista if direccion is None or f.direccion == direccion]}
+
+    @app.get("/v1/diccionario", dependencies=protegido)
+    def diccionario(buscar: str = "", categoria: Optional[str] = None) -> dict:
+        """Fichas del diccionario de la app: vocabulario + referencia oficial + si hay animación."""
+        from .vocabulario import normalizar, sin_tildes
+
+        consulta = sin_tildes(normalizar(buscar))
+        con_avatar = {i["glosa"] for i in avatar.indice()}
+        fichas = []
+        for e in vocab.entradas:
+            if e.tipo == "fondo" or (categoria and e.categoria != categoria):
+                continue
+            terminos = [e.espanol, e.glosa.replace("-", " "), *e.sinonimos]
+            if consulta and not any(consulta in sin_tildes(normalizar(t)) for t in terminos):
+                continue
+            c = cobertura.get(e.glosa, {})
+            ficha = e.a_dict()
+            ficha.update({
+                "referencia_oficial": {"titulo": c.get("titulo_oficial", ""), "url": c.get("url", "")}
+                if c.get("resultado") == "encontrada" else None,
+                "tiene_animacion": e.glosa in con_avatar,
+            })
+            fichas.append(ficha)
+        categorias = sorted({e.categoria for e in vocab.entradas if e.tipo != "fondo"})
+        return {"version": version_vocab, "categorias": categorias, "total": len(fichas), "fichas": fichas}
+
+    @app.post("/v1/retroalimentacion", dependencies=protegido)
+    async def recibir_reporte(request: Request) -> dict:
+        cuerpo = await request.body()
+        if len(cuerpo) > cfg.max_bytes_reporte:
+            raise HTTPException(status_code=413, detail="Reporte demasiado grande")
+        try:
+            import json
+
+            ident = reportes.guardar(json.loads(cuerpo))
+        except (ReporteInvalido, ValueError) as e:
+            raise HTTPException(status_code=422, detail=f"Reporte rechazado: {e}") from e
+        return {"guardado": ident, "estado": "pendiente"}
+
+    @app.get("/v1/retroalimentacion", dependencies=protegido)
+    def listar_reportes(estado: Optional[str] = None) -> dict:
+        return {"reportes": reportes.listar(estado)}
+
+    @app.get("/v1/retroalimentacion/resumen", dependencies=protegido)
+    def resumen_reportes() -> dict:
+        return reportes.resumen()
+
+    @app.post("/v1/retroalimentacion/{ident}/revision", dependencies=protegido)
+    def revisar_reporte(ident: str, p: PeticionRevision) -> dict:
+        try:
+            return reportes.revisar(ident, p.estado, p.revisor, p.nota)
+        except ReporteInvalido as e:
+            raise HTTPException(status_code=422, detail=str(e)) from e
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail="No existe ese reporte") from e
 
     @app.post("/v1/traducir/texto", dependencies=protegido)
     def traducir_texto(p: PeticionTexto) -> dict:

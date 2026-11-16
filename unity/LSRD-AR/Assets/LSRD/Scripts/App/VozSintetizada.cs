@@ -75,9 +75,10 @@ namespace LSRD.App
         void Decir(string texto) { Debug.Log("[LSRD] Voz: " + texto); contador++; }
 #endif
 
-        public void Hablar(string texto)
+        /// <param name="forzar">Habla aunque la voz esté desactivada en ajustes (emergencias).</param>
+        public void Hablar(string texto, bool forzar = false)
         {
-            if (!Activa || string.IsNullOrWhiteSpace(texto)) return;
+            if ((!Activa && !forzar) || string.IsNullOrWhiteSpace(texto)) return;
             finEstimado = Time.realtimeSinceStartup + 0.6f + texto.Length * 0.065f / Mathf.Max(0.5f, Velocidad);
             try { Decir(texto); }
             catch (Exception e) { Debug.LogWarning("[LSRD] No se pudo hablar: " + e.Message); }

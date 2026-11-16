@@ -129,7 +129,8 @@ RAIZ = Path(__file__).resolve().parents[2]
 RECURSOS = RAIZ / "unity" / "LSRD-AR" / "Assets" / "LSRD" / "Resources" / "LSRD"
 
 
-@pytest.mark.parametrize("nombre", ["vocabulario_mvp.csv", "frases_mvp.csv"])
+@pytest.mark.parametrize("nombre", ["vocabulario_mvp.csv", "frases_mvp.csv", "emergencias.csv",
+                                    "cobertura_diccionario_oficial.csv"])
 def test_copias_del_vocabulario_en_unity_estan_al_dia(nombre):
     assert (RECURSOS / "Datos" / nombre).read_bytes() == (RAIZ / "vocabulario" / nombre).read_bytes(), \
         "Copie el vocabulario a Unity (menú LSRD > Copiar vocabulario o cp vocabulario/*.csv …/Resources/LSRD/Datos/)"

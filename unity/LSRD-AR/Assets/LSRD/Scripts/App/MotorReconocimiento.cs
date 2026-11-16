@@ -27,6 +27,8 @@ namespace LSRD.App
         public bool SenaEnCurso => Segmentador.EnSena;
         public string EstadoModelos { get; private set; } = "";
         public bool ModelosDemostracion { get; private set; }
+        public bool ModelosSemilla { get; private set; }
+        public string NotaModelos { get; private set; } = "";
 
         ClasificadorOnnx senas, dactilologia;
         readonly float[] mano = new float[FormatoLandmarks.PuntosMano * 3];
@@ -60,6 +62,9 @@ namespace LSRD.App
             else mensajes.Add("Letras: " + e2);
             ModelosDemostracion = (senas != null && senas.Info.EsDemostracion) || (dactilologia != null && dactilologia.Info.EsDemostracion);
             if (ModelosDemostracion) mensajes.Add("MODELO DE DEMOSTRACIÓN (no reconoce LSRD)");
+            ModelosSemilla = (senas != null && senas.Info.EsSemilla) || (dactilologia != null && dactilologia.Info.EsSemilla);
+            if (ModelosSemilla) mensajes.Add("MODELO SEMILLA (sin validar con personas nuevas)");
+            NotaModelos = senas != null ? senas.Info.Nota : "";
             EstadoModelos = string.Join(" · ", mensajes);
         }
 
