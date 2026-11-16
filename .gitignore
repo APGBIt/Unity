@@ -7,3 +7,4 @@ servidor/datos/
 herramientas/verificacion-csharp/*/bin/
 herramientas/verificacion-csharp/*/obj/
 .DS_Store
+ml/datos/

@@ -37,3 +37,12 @@ Frases frecuentes de un mostrador de atención al público, en las dos direccion
 3. Para cada frase: el intérprete escribe la secuencia de glosas; una persona sorda la revisa.
 4. Cambiar `estado` a `validada` y registrar quién validó en `notas`.
 5. Las señas que no existan se quitan o se marcan para deletreo.
+
+## `cobertura_diccionario_oficial.csv`
+
+Cruce del vocabulario del MVP con el índice público del [Diccionario Oficial](https://diccionariolsrd.cc/diccionario/) (unas 1.466 entradas). De las 155 señas propuestas se localizaron 60. La consulta fue automática y parcial: `no_localizada` significa que no se encontró el título en el índice, no que la seña no exista. Sirve para preparar la validación:
+
+- Las 60 localizadas tienen referencia oficial; son las primeras candidatas a grabar.
+- Trámites, justicia, días de la semana y palabras para preguntar casi no aparecen (la sección «Palabras para preguntar» del diccionario figura sin artículos). Esas señas hay que acordarlas directamente con ANSORDO.
+
+El archivo solo contiene títulos y direcciones. No se copió ningún video, imagen ni definición del diccionario, que tiene derechos reservados del CONADIS.

@@ -152,6 +152,30 @@ def dividir_por_firmante(
     return ent, va, pr
 
 
+def dividir_por_toma(
+    muestras: list[Muestra], fraccion_validacion: float = 0.25, semilla: int = 7,
+) -> tuple[list[Muestra], list[Muestra]]:
+    """División para el modo semilla: aparta tomas, no personas.
+
+    Se usa cuando hay muy pocos firmantes (videos de diccionario). La exactitud
+    que resulta mide tomas nuevas de **las mismas personas**: no anticipa cómo
+    reconoce a alguien nuevo. Las clases con una sola toma quedan solo en
+    entrenamiento.
+    """
+    rng = np.random.default_rng(semilla)
+    por_clase: dict[str, list[Muestra]] = {}
+    for m in muestras:
+        por_clase.setdefault(m.glosa, []).append(m)
+    ent, val = [], []
+    for glosa in sorted(por_clase):
+        ms = list(por_clase[glosa])
+        rng.shuffle(ms)
+        n_val = 0 if len(ms) < 2 else min(len(ms) - 1, max(1, int(round(len(ms) * fraccion_validacion))))
+        val.extend(ms[:n_val])
+        ent.extend(ms[n_val:])
+    return ent, val
+
+
 # ----------------------------------------------------------------------------
 # Datasets
 # ----------------------------------------------------------------------------

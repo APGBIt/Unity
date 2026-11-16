@@ -1,0 +1,4 @@
+id,nombre,url,tipo,titular,permiso,evidencia_permiso,uso,firmante,notas
+diccionario-oficial,Diccionario Oficial de la Lengua de Señas Dominicana,https://diccionariolsrd.cc/diccionario/,sitio,CONADIS / MINERD / ANSORDO,pendiente,,entrenamiento|avatar|referencia,,"Unas 1.466 entradas. El sitio declara «© Copyright Consejo Nacional de Discapacidad» y tiene la copia bloqueada: requiere convenio escrito antes de descargar."
+ansordo-youtube,Canal de YouTube de ANSORDO (AnsordoRD),,canal,ANSORDO,pendiente,,entrenamiento|referencia,,Confirmar la dirección del canal y pedir autorización a ANSORDO y a las personas que aparecen.
+grabaciones-propias,Grabaciones del modo recolección y sesiones del proyecto,datos/videos_propios,carpeta,Proyecto Señas RD,propio,Consentimiento firmado por cada participante (docs/CONSENTIMIENTO.md),entrenamiento|avatar,,Copie aquí los videos grabados fuera de la app. Un subdirectorio por firmante (P001/ P002/ …).

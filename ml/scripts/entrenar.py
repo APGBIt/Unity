@@ -8,6 +8,13 @@ exporta ``senas.onnx`` / ``dactilologia.onnx`` con su ``.json``.
 Uso:
     python scripts/entrenar.py --datos ../servidor/datos/recolecciones --salida modelos/v1
     python scripts/entrenar.py --datos ... --salida ... --prioridad 1 --unity
+
+Modo semilla (``--semilla``): para cuando solo hay videos de pocas personas
+(por ejemplo, un diccionario). Entrena con lo que haya, mide con tomas apartadas
+de las mismas personas y marca el modelo como SEMILLA: sirve para arrancar y
+para preetiquetar grabaciones nuevas, no como modelo validado.
+
+    python scripts/entrenar.py --datos datos/extraidos --salida modelos/semilla --semilla --unity
 """
 
 from __future__ import annotations
@@ -44,9 +51,40 @@ def filtrar_clases(muestras, clases, min_muestras, min_firmantes):
     return utiles, excluidas
 
 
+NOTA_SEMILLA = ("MODELO SEMILLA entrenado con {n} tomas de {f} persona(s). "
+                "No está validado con personas nuevas: úselo solo para pruebas internas.")
+
+
+def repetir(muestras, minimo=600):
+    """Con pocas tomas cada época sería de un puñado de ejemplos: se repiten
+    (cada repetición recibe aumentos distintos)."""
+    if not muestras:
+        return muestras
+    return muestras * max(1, -(-minimo // len(muestras)))
+
+
+def entrenar_semilla(muestras, clases, dactilologia, epocas):
+    """Devuelve ``(resultado, evaluación, nota)`` del modo semilla."""
+    ent, val = D.dividir_por_toma(muestras)
+    medible = len(val) > 0
+    entrenar = E.entrenar_dactilologia if dactilologia else E.entrenar_senas
+    cfg = None if dactilologia else E.ConfigEntrenamiento(epocas=epocas)
+    r = entrenar(repetir(ent), val if medible else ent, clases, cfg)
+    ev = E.evaluar(r.modelo, val if medible else ent, clases, dactilologia=dactilologia)
+    ev["tipo_medicion"] = "tomas apartadas de las mismas personas" if medible else "ninguna (una sola toma por seña)"
+    nota = NOTA_SEMILLA.format(n=len(muestras), f=len({m.firmante for m in muestras}))
+    return r, ev, nota
+
+
 def reporte_md(nombre, ev, excluidas, clases) -> str:
     lineas = [f"# Reporte de entrenamiento — {nombre}", ""]
-    lineas.append(f"Clases entrenadas: {len(clases)}. Muestras de prueba: {ev['n']} (firmantes no vistos).")
+    if ev.get("tipo_medicion"):
+        lineas.append(f"> **Modelo semilla.** Medición: {ev['tipo_medicion']}. Esta exactitud no anticipa el "
+                      "desempeño con personas nuevas.")
+        lineas.append("")
+        lineas.append(f"Clases entrenadas: {len(clases)}. Muestras de medición: {ev['n']}.")
+    else:
+        lineas.append(f"Clases entrenadas: {len(clases)}. Muestras de prueba: {ev['n']} (firmantes no vistos).")
     lineas.append("")
     lineas.append(f"- Exactitud: **{ev['exactitud']:.1%}**")
     if "exactitud_top3" in ev:
@@ -79,11 +117,17 @@ def main() -> None:
     ap.add_argument("--vocabulario", type=Path, default=V.RUTA_POR_DEFECTO)
     ap.add_argument("--prioridad", type=int, default=2)
     ap.add_argument("--epocas", type=int, default=60)
-    ap.add_argument("--min-muestras", type=int, default=10)
-    ap.add_argument("--min-firmantes", type=int, default=3)
+    ap.add_argument("--min-muestras", type=int, default=None, help="por defecto 10 (1 en modo semilla)")
+    ap.add_argument("--min-firmantes", type=int, default=None, help="por defecto 3 (1 en modo semilla)")
+    ap.add_argument("--semilla", action="store_true",
+                    help="modo semilla: entrena con pocas personas y marca el modelo como no validado")
     ap.add_argument("--solo-validadas", action="store_true", help="entrenar solo glosas con estado 'validada'")
     ap.add_argument("--unity", action="store_true", help="copiar los modelos al proyecto Unity")
     a = ap.parse_args()
+    if a.min_muestras is None:
+        a.min_muestras = 1 if a.semilla else 10
+    if a.min_firmantes is None:
+        a.min_firmantes = 1 if a.semilla else 3
 
     entradas = V.cargar(a.vocabulario)
     clases_s = V.clases_senas(entradas, a.prioridad, a.solo_validadas)
@@ -99,28 +143,38 @@ def main() -> None:
     senas = [m for m in muestras if m.glosa in set(clases_s)]
     clases_ok, excluidas = filtrar_clases(senas, clases_s, a.min_muestras, a.min_firmantes)
     if len(clases_ok) >= 2:
-        ent, val, prueba = D.dividir_por_firmante([m for m in senas if m.glosa in set(clases_ok)])
-        r = E.entrenar_senas(ent, val, clases_ok, E.ConfigEntrenamiento(epocas=a.epocas),
-                             informar=lambda f: print(f"  señas · época {f['epoca']} · val {f['exactitud_val']:.1%}"))
-        ev = E.evaluar(r.modelo, prueba, clases_ok)
-        X.exportar_senas(r.modelo, clases_ok, a.salida, ev)
+        utiles = [m for m in senas if m.glosa in set(clases_ok)]
+        nota = ""
+        if a.semilla:
+            r, ev, nota = entrenar_semilla(utiles, clases_ok, False, a.epocas)
+        else:
+            ent, val, prueba = D.dividir_por_firmante(utiles)
+            r = E.entrenar_senas(ent, val, clases_ok, E.ConfigEntrenamiento(epocas=a.epocas),
+                                 informar=lambda f: print(f"  señas · época {f['epoca']} · val {f['exactitud_val']:.1%}"))
+            ev = E.evaluar(r.modelo, prueba, clases_ok)
+        X.exportar_senas(r.modelo, clases_ok, a.salida, ev, nota=nota)
         (a.salida / "reporte_senas.md").write_text(reporte_md("señas", ev, excluidas, clases_ok), encoding="utf-8")
         resumen["senas"] = {"exactitud": ev["exactitud"], "clases": len(clases_ok), "excluidas": len(excluidas)}
-        print(f"Señas: exactitud con firmantes no vistos {ev['exactitud']:.1%}")
+        print(f"Señas: exactitud {ev['exactitud']:.1%} ({ev.get('tipo_medicion', 'firmantes no vistos')})")
     else:
         print("Señas: no hay datos suficientes todavía (se necesitan al menos 2 clases con datos).")
 
     letras = [m for m in muestras if m.glosa in set(clases_l)]
-    clases_lok, excl_l = filtrar_clases(letras, clases_l, max(3, a.min_muestras // 2), a.min_firmantes)
+    clases_lok, excl_l = filtrar_clases(letras, clases_l, 1 if a.semilla else max(3, a.min_muestras // 2), a.min_firmantes)
     if len(clases_lok) >= 2:
-        ent, val, prueba = D.dividir_por_firmante([m for m in letras if m.glosa in set(clases_lok)])
-        r = E.entrenar_dactilologia(ent, val, clases_lok)
-        ev = E.evaluar(r.modelo, prueba, clases_lok, dactilologia=True)
-        X.exportar_dactilologia(r.modelo, clases_lok, a.salida, ev)
+        utiles = [m for m in letras if m.glosa in set(clases_lok)]
+        nota = ""
+        if a.semilla:
+            r, ev, nota = entrenar_semilla(utiles, clases_lok, True, a.epocas)
+        else:
+            ent, val, prueba = D.dividir_por_firmante(utiles)
+            r = E.entrenar_dactilologia(ent, val, clases_lok)
+            ev = E.evaluar(r.modelo, prueba, clases_lok, dactilologia=True)
+        X.exportar_dactilologia(r.modelo, clases_lok, a.salida, ev, nota=nota)
         (a.salida / "reporte_dactilologia.md").write_text(reporte_md("dactilología", ev, excl_l, clases_lok),
                                                           encoding="utf-8")
         resumen["dactilologia"] = {"exactitud": ev["exactitud"], "clases": len(clases_lok)}
-        print(f"Dactilología: exactitud con firmantes no vistos {ev['exactitud']:.1%}")
+        print(f"Dactilología: exactitud {ev['exactitud']:.1%} ({ev.get('tipo_medicion', 'firmantes no vistos')})")
     else:
         print("Dactilología: no hay datos suficientes todavía.")
 

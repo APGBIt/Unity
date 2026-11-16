@@ -158,4 +158,4 @@ def exportar_dactilologia(
 def _resumen_metricas(m: Optional[dict]) -> Optional[dict]:
     if not m:
         return None
-    return {k: m[k] for k in ("n", "exactitud", "exactitud_top3", "por_firmante") if k in m}
+    return {k: m[k] for k in ("n", "exactitud", "exactitud_top3", "por_firmante", "tipo_medicion") if k in m}
