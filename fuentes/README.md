@@ -27,4 +27,4 @@ Un video de señas muestra la cara y el cuerpo de una persona identificable, y e
 
 ## Límite de los videos de diccionario
 
-Un diccionario suele tener una o dos personas por seña. Con eso se puede entrenar un **modelo semilla** (`entrenar.py --semilla`) y animar el avatar, pero no medir si reconoce a personas nuevas. Para un modelo validado siguen haciendo falta las grabaciones de unas 30 personas sordas (`docs/PROTOCOLO_RECOLECCION.md`).
+Un diccionario suele tener una o dos personas por seña. Con eso se puede entrenar un **modelo semilla** (`entrenar.py --semilla`) y animar el avatar, pero no medir si reconoce a personas nuevas. Para un modelo validado siguen haciendo falta las grabaciones de unas 30 personas sordas (`documentacion/PROTOCOLO_RECOLECCION.md`).

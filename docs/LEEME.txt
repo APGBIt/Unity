@@ -1,0 +1,2 @@
+Esta carpeta es la app web Señas RD ya construida. No la edite a mano: se genera con "npm run build" en web/.
+GitHub Pages la publica tal cual (Settings → Pages → rama main, carpeta /docs).

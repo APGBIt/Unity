@@ -1,0 +1,21 @@
+{
+  "name": "senas-rd-web",
+  "version": "1.0.0",
+  "description": "Señas RD: app web instalable que traduce Lengua de Señas Dominicana ↔ español con la cámara del teléfono.",
+  "type": "module",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "evaluar": "node tests/evaluar.mjs",
+    "e2e": "node e2e/run.mjs"
+  },
+  "dependencies": {
+    "esbuild": "^0.25.12"
+  },
+  "devDependencies": {
+    "@mediapipe/holistic": "0.5.1675471629",
+    "sharp": "^0.34.5"
+  }
+}

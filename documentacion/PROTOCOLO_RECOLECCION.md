@@ -6,7 +6,7 @@ Objetivo de la fase 1: **≥ 30 firmantes sordos** de varias regiones, edades y 
 
 - Convenio firmado con ANSORDO (y CONADIS si se usa su diccionario como referencia).
 - Vocabulario revisado por un comité con personas sordas: qué seña se graba para cada glosa y qué variantes regionales existen (`vocabulario/README.md`).
-- Consentimiento presentado **en LSRD** por un intérprete, con la plantilla de `docs/CONSENTIMIENTO.md`. Se registra el código del participante, nunca el nombre en la app.
+- Consentimiento presentado **en LSRD** por un intérprete, con la plantilla de `documentacion/CONSENTIMIENTO.md`. Se registra el código del participante, nunca el nombre en la app.
 - Pago justo por sesión, acordado con la asociación.
 - Servidor de la sesión encendido en la misma red (`servidor/README.md`) o tomas guardadas en el teléfono para enviar después.
 

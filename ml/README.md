@@ -22,7 +22,7 @@ python -m pytest -q
 
 ## Formato LSRD-LM v1
 
-Cada cuadro tiene 78 puntos × (x, y, z): 7 de la pose (nariz, hombros, codos, muñecas), 21 por mano y 29 de la cara (boca, cejas, ojos, nariz, mentón, frente). Las unidades son "alto de imagen" (x multiplicado por ancho/alto) y un punto ausente vale 0. Detalle en `lsrd_ml/formato.py` y `docs/ARQUITECTURA.md`.
+Cada cuadro tiene 78 puntos × (x, y, z): 7 de la pose (nariz, hombros, codos, muñecas), 21 por mano y 29 de la cara (boca, cejas, ojos, nariz, mentón, frente). Las unidades son "alto de imagen" (x multiplicado por ancho/alto) y un punto ausente vale 0. Detalle en `lsrd_ml/formato.py` y `documentacion/ARQUITECTURA.md`.
 
 ## Modelos
 

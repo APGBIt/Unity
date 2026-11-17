@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Señas RD</title>
+<meta name="description" content="Traductor de Lengua de Señas Dominicana y español con la cámara del teléfono. Todo se analiza en el dispositivo; no se guarda video.">
+<meta name="theme-color" content="#0B1220">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Señas RD">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root {
+--fondo: #0B1220; --superficie: #141D2E; --clara: #1F2B42; --borde: #2C3A55;
+--texto: #F2F5F9; --secundario: #A9B8CD; --acento: #2DD4BF; --acento-oscuro: #0F766E; --sobre-acento: #06221F;
+--peligro: #D93D42; --peligro-suave: #FF8A8E; --advertencia: #F5B94A; --exito: #4ADE94;
+--radio: 14px;
+color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--fondo); color: var(--texto); font: 17px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+#app { max-width: 600px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+h1, h2, p { margin: 0; }
+a { color: var(--acento); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+.cargando { padding: 40vh 24px 0; text-align: center; color: var(--secundario); }
+.btn { border: 0; border-radius: var(--radio); padding: 14px 16px; min-height: 52px; font-weight: 650; background: var(--clara); color: var(--texto); cursor: pointer; text-align: center; flex: 1 1 0; touch-action: manipulation; }
+.btn:active { filter: brightness(1.15); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn.primario { background: var(--acento); color: var(--sobre-acento); }
+.btn.peligro { background: var(--peligro); color: #fff; }
+.btn.suave { background: var(--clara); }
+.btn.rojo { color: var(--peligro-suave); }
+.btn.chico { min-height: 40px; padding: 8px 14px; font-size: 15px; flex: 0 0 auto; }
+.btn.icono { flex: 0 0 56px; padding: 0; font-size: 22px; }
+.btn.alto { min-height: 72px; }
+.btn.grande { min-height: 84px; font-size: 22px; text-align: left; padding: 16px 20px; flex: 0 0 auto; }
+.btn.grande small { display: block; font-size: 15px; font-weight: 500; opacity: .85; margin-top: 2px; }
+.btn.grabando { background: var(--peligro); color: #fff; animation: pulso 1.2s ease-in-out infinite; }
+@keyframes pulso { 50% { filter: brightness(1.25); } }
+@media (prefers-reduced-motion: reduce) { .btn.grabando { animation: none; } }
+.fila { display: flex; gap: 10px; }
+.fila-entre { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.fila-campo { display: flex; gap: 8px; }
+.fila-campo .campo { flex: 1 1 auto; min-width: 0; }
+.fila-campo .btn { flex: 0 0 auto; }
+.rejilla { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.rejilla.dos { grid-template-columns: 1fr 1fr; }
+.campo { width: 100%; min-height: 52px; border-radius: var(--radio); border: 1px solid var(--borde); background: var(--superficie); padding: 12px 14px; }
+.campo::placeholder { color: var(--secundario); }
+.tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 14px 16px; }
+.nota { color: var(--secundario); font-size: 14.5px; }
+.nota:empty { display: none; }
+.quien { font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--secundario); }
+.etiqueta { font-size: 15px; padding: 8px 12px; border-radius: 10px; background: var(--clara); }
+.etiqueta.pendiente { color: var(--advertencia); }
+.etiqueta.ok { color: var(--exito); }
+.dato { color: var(--secundario); font-size: 15.5px; }
+.pestanas { display: flex; gap: 8px; }
+.btn.pestana { min-height: 46px; padding: 8px 10px; font-size: 15px; background: var(--superficie); border: 1px solid var(--borde); color: var(--secundario); }
+.btn.pestana.activa { background: var(--acento-oscuro); border-color: var(--acento); color: #fff; }
+.barra { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 8px 12px; min-height: 58px; background: var(--fondo); border-bottom: 1px solid var(--borde); }
+.barra h1 { font-size: 20px; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barra.roja h1 { color: var(--peligro-suave); }
+.volver { width: 44px; height: 44px; border: 0; border-radius: 12px; background: var(--clara); color: var(--texto); font-size: 28px; line-height: 1; cursor: pointer; flex: 0 0 auto; }
+.pagina { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.lista { display: flex; flex-direction: column; gap: 8px; }
+.renglon { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; min-height: 56px; padding: 12px 16px; border-radius: var(--radio); border: 1px solid var(--borde); background: var(--superficie); cursor: pointer; }
+.avance { font-size: 14px; color: var(--secundario); white-space: nowrap; }
+.avance.empezada { color: var(--advertencia); }
+.avance.lista { color: var(--exito); font-weight: 700; }
+.marca-clip { color: var(--acento); }
+.aviso { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); max-width: min(92vw, 560px); background: #F2F5F9; color: #0B1220; padding: 12px 16px; border-radius: 12px; font-weight: 600; font-size: 15.5px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; text-align: center; }
+.aviso.visible { opacity: 1; transform: translate(-50%, 0); }
+.aviso.alerta { background: var(--advertencia); }
+.velo { position: fixed; inset: 0; z-index: 40; background: rgba(3, 7, 14, .78); display: flex; align-items: flex-end; justify-content: center; padding: 12px; }
+.caja { width: 100%; max-width: 560px; background: var(--superficie); border: 1px solid var(--borde); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px; max-height: 88dvh; overflow: auto; }
+.caja.alta { height: 82dvh; }
+.caja.alta .lista { flex: 1 1 auto; overflow: auto; }
+.caja h2 { font-size: 20px; }
+.caja p { color: var(--secundario); }
+.inicio { padding: 20px 16px 24px; display: flex; flex-direction: column; gap: 14px; }
+.marca { display: flex; align-items: center; gap: 14px; margin: 6px 0 4px; }
+.logo { width: 60px; height: 60px; border-radius: 18px; background: var(--acento-oscuro); display: grid; place-items: center; font-size: 32px; }
+.marca h1 { font-size: 30px; letter-spacing: -.01em; }
+.marca p { color: var(--secundario); font-size: 15.5px; }
+.tarjeta.estado { display: flex; flex-direction: column; gap: 2px; border-left: 4px solid var(--exito); }
+.tarjeta.estado.vacia { border-left-color: var(--advertencia); }
+.tarjeta.estado span { color: var(--secundario); font-size: 15px; }
+.tarjeta.fila-entre p { font-size: 15px; color: var(--secundario); }
+.camara { position: relative; background: #000; overflow: hidden; flex: 0 0 auto; height: 40dvh; min-height: 220px; }
+.camara video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.camara video.espejo { transform: scaleX(-1); }
+.camara .esqueleto { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.chip-camara { position: absolute; left: 10px; top: 10px; padding: 6px 12px; border-radius: 999px; background: rgba(11, 18, 32, .82); font-size: 14px; font-weight: 650; }
+.chip-camara.activo { background: var(--acento); color: var(--sobre-acento); }
+.chip-camara.alerta { background: var(--advertencia); color: #201503; }
+.girar { position: absolute; right: 10px; top: 10px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(11, 18, 32, .82); color: #fff; font-size: 22px; cursor: pointer; }
+.estado-camara { position: absolute; inset: auto 0 0 0; padding: 10px 14px; background: rgba(11, 18, 32, .88); font-size: 15px; display: none; }
+.estado-camara.visible { display: block; }
+.estado-camara.error { color: var(--advertencia); inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; }
+.conversacion, .ensenar-sena { display: flex; flex-direction: column; flex: 1 1 auto; }
+.panel-sordo, .panel-oyente { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.panel-oyente { border-top: 1px solid var(--borde); background: var(--superficie); margin-top: auto; padding-bottom: 16px; }
+.traduccion { font-size: 28px; line-height: 1.2; font-weight: 700; min-height: 68px; }
+.traduccion.vacia { font-size: 17px; font-weight: 400; color: var(--secundario); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips:empty { display: none; }
+.chip { border: 1px solid var(--borde); background: var(--clara); border-radius: 999px; padding: 8px 14px; font-weight: 600; font-size: 15.5px; cursor: pointer; display: inline-flex; align-items: baseline; gap: 6px; }
+.chip small { font-weight: 500; font-size: 12px; color: var(--secundario); }
+.chip.dudosa { border-color: var(--advertencia); color: var(--advertencia); }
+.chip.abierta { background: var(--acento-oscuro); border-color: var(--acento); color: #fff; }
+.chip.paso { cursor: default; }
+.chip.paso.sin-clip { border-style: dashed; color: var(--secundario); }
+.chip.paso.actual { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); }
+.opciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px; border-radius: var(--radio); background: var(--superficie); border: 1px solid var(--borde); }
+.opciones span { color: var(--secundario); font-size: 14.5px; }
+.nota-frase { color: var(--secundario); font-size: 14px; }
+.nota-frase:empty { display: none; }
+.aviso-fijo { border-left: 4px solid var(--advertencia); }
+.respuesta { position: fixed; inset: 0; z-index: 30; background: var(--fondo); display: flex; flex-direction: column; gap: 12px; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); max-width: 600px; margin: 0 auto; overflow: auto; }
+.frase-respuesta { font-size: 30px; line-height: 1.2; font-weight: 750; }
+.marco-avatar { position: relative; flex: 1 1 auto; min-height: 240px; background: var(--superficie); border: 1px solid var(--borde); border-radius: 18px; overflow: hidden; }
+.marco-avatar > p { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; color: var(--secundario); }
+.lienzo-avatar { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lienzo-avatar.chico { position: static; width: 112px; height: 112px; flex: 0 0 auto; background: var(--superficie); border: 1px solid var(--borde); border-radius: 14px; }
+.tarjeta-palabra { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 20px; font-size: 44px; font-weight: 800; overflow-wrap: anywhere; background: var(--superficie); }
+.rotulo-avatar { text-align: center; font-size: 20px; font-weight: 700; color: var(--acento); min-height: 28px; }
+.intro { color: var(--secundario); }
+.contador { display: flex; align-items: baseline; gap: 10px; }
+.contador strong { font-size: 52px; line-height: 1; color: var(--advertencia); font-variant-numeric: tabular-nums; }
+.contador.lista strong { color: var(--exito); }
+.contador span { color: var(--secundario); font-size: 15px; }
+.estado-grabacion { font-size: 17px; min-height: 48px; }
+.resultado-prueba { font-weight: 650; padding: 10px 12px; border-radius: 12px; background: var(--superficie); }
+.resultado-prueba:empty { display: none; }
+.resultado-prueba.bien { color: var(--exito); }
+.resultado-prueba.mal { color: var(--advertencia); }
+.tomas { display: flex; flex-wrap: wrap; gap: 8px; }
+.tomas:empty { display: none; }
+.toma { display: inline-flex; border: 1px solid var(--borde); border-radius: 999px; overflow: hidden; }
+.toma button { border: 0; background: var(--clara); padding: 9px 13px; min-height: 42px; cursor: pointer; font-weight: 600; }
+.toma .quitar { background: var(--superficie); color: var(--peligro-suave); }
+.btn.grande.primario { text-align: center; }
+.lista-emergencia { display: flex; flex-direction: column; gap: 10px; }
+.btn.frase-emergencia { flex: 0 0 auto; min-height: 76px; font-size: 21px; text-align: left; padding: 14px 18px; }
+.cartel { position: fixed; inset: 0; z-index: 30; background: var(--fondo); display: flex; flex-direction: column; gap: 16px; padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)); }
+.cartel .frase { flex: 1 1 auto; display: grid; place-items: center; text-align: center; font-size: clamp(38px, 11vw, 76px); line-height: 1.1; font-weight: 800; overflow-wrap: anywhere; }
+.cartel .pie { text-align: center; color: var(--secundario); }
+.cartel .btn { min-height: 64px; font-size: 19px; }
+.ficha { position: fixed; inset: 0; z-index: 20; background: var(--fondo); overflow: auto; max-width: 600px; margin: 0 auto; }
+.ficha .marco-avatar { min-height: 300px; flex: 0 0 auto; }
+.ajustes h2 { font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: var(--acento); margin-top: 14px; }
+.ajuste { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border-radius: var(--radio); background: var(--superficie); border: 1px solid var(--borde); }
+.ajuste.columna { flex-direction: column; align-items: stretch; gap: 8px; }
+.ajuste small { display: block; color: var(--secundario); font-size: 14px; font-weight: 400; }
+.ajuste input[type=checkbox] { width: 28px; height: 28px; accent-color: var(--acento); flex: 0 0 auto; }
+.puntos { margin: 0; padding-left: 20px; color: var(--secundario); font-size: 15px; display: flex; flex-direction: column; gap: 6px; }
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<noscript><p style="padding:24px;font-family:system-ui;color:#fff">Señas RD necesita JavaScript para funcionar.</p></noscript>
+<script>(()=>{function i(o,a,...e){let t=document.createElement(o);if(a)for(let[s,r]of Object.entries(a))r==null||r===!1||(s==="class"?t.className=r:s==="text"?t.textContent=r:s.startsWith("on")&&typeof r=="function"?t.addEventListener(s.slice(2).toLowerCase(),r):s==="style"&&typeof r=="object"?Object.assign(t.style,r):s in t&&s!=="list"&&typeof r!="string"?t[s]=r:t.setAttribute(s,r===!0?"":r));return De(t,e),t}function De(o,a){for(let e of a.flat(1/0))e==null||e===!1||o.appendChild(e instanceof Node?e:document.createTextNode(String(e)));return o}function Lo(o){for(;o.firstChild;)o.removeChild(o.firstChild);return o}function N(o,...a){return De(Lo(o),a)}var _=(o,a,e="",t={})=>i("button",{type:"button",class:"btn "+e,onclick:a,...t},o);function U(o,a,e){return i("header",{class:"barra"},a?i("button",{type:"button",class:"volver",onclick:a,"aria-label":"Volver"},"\u2039"):null,i("h1",{text:o}),e||null)}var ea=null,re=null;function P(o,a=""){ea||(ea=i("div",{class:"aviso",role:"status","aria-live":"polite"}),document.body.appendChild(ea)),ea.textContent=o,ea.className="aviso visible "+a,clearTimeout(re),re=setTimeout(()=>{ea.className="aviso"},3600)}function Ce(){clearTimeout(re),ea&&(ea.className="aviso")}function ga({titulo:o,texto:a,aceptar:e="Aceptar",cancelar:t="Cancelar",peligro:s=!1,contenido:r=null}){return new Promise(c=>{let n=g=>{p.remove(),c(g)},p=i("div",{class:"velo",role:"dialog","aria-modal":"true"},i("div",{class:"caja"},i("h2",{text:o}),a?i("p",{text:a}):null,r,i("div",{class:"fila"},t?_(t,()=>n(!1),"suave"):null,_(e,()=>n(!0),s?"peligro":"primario"))));document.body.appendChild(p)})}function ja(o=40){try{navigator.vibrate&&navigator.vibrate(o)}catch{}}function Te(o,a,e="application/json"){let t=URL.createObjectURL(new Blob([a],{type:e})),s=i("a",{href:t,download:o});document.body.appendChild(s),s.click(),s.remove(),setTimeout(()=>URL.revokeObjectURL(t),2e3)}var Fe=`glosa,espanol,sinonimos,categoria,prioridad,tipo,modelo,estado,notas
+_FONDO,(sin se\xF1a),,control,1,fondo,senas,propuesta,"Movimientos que no son se\xF1as (rascarse, acomodarse, manos en reposo). Necesario para que el modelo no invente se\xF1as."
+HOLA,hola,hola|saludos,saludos,1,se\xF1a,senas,propuesta,
+BUENOS-DIAS,buenos d\xEDas,buenos d\xEDas|buen d\xEDa,saludos,1,se\xF1a,senas,propuesta,
+BUENAS-TARDES,buenas tardes,buenas tardes,saludos,1,se\xF1a,senas,propuesta,
+BUENAS-NOCHES,buenas noches,buenas noches,saludos,2,se\xF1a,senas,propuesta,
+ADIOS,adi\xF3s,adi\xF3s|hasta luego|chao|nos vemos,saludos,1,se\xF1a,senas,propuesta,
+GRACIAS,gracias,gracias|muchas gracias|agradecido|agradecida,cortesia,1,se\xF1a,senas,propuesta,
+POR-FAVOR,por favor,por favor|favor,cortesia,1,se\xF1a,senas,propuesta,
+PERDON,perd\xF3n,perd\xF3n|disculpe|disculpa|con permiso|lo siento,cortesia,1,se\xF1a,senas,propuesta,
+DE-NADA,de nada,de nada|a la orden,cortesia,2,se\xF1a,senas,propuesta,
+BIENVENIDO,bienvenido,bienvenido|bienvenida,cortesia,2,se\xF1a,senas,propuesta,
+MUCHO-GUSTO,mucho gusto,mucho gusto|encantado|encantada,cortesia,2,se\xF1a,senas,propuesta,
+SORDO,sordo,sordo|sorda|persona sorda,comunicacion,1,se\xF1a,senas,propuesta,
+OYENTE,oyente,oyente|persona oyente,comunicacion,2,se\xF1a,senas,propuesta,
+INTERPRETE,int\xE9rprete,int\xE9rprete|interprete,comunicacion,1,se\xF1a,senas,propuesta,
+LENGUA-DE-SE\xD1AS,lengua de se\xF1as,lengua de se\xF1as|lenguaje de se\xF1as|se\xF1as,comunicacion,1,se\xF1a,senas,propuesta,
+ENTENDER,entender,entender|entiendo|entiende|comprender|comprendo|entendi\xF3,comunicacion,1,se\xF1a,senas,propuesta,
+NO-ENTENDER,no entender,no entiendo|no entend\xED|no comprendo,comunicacion,1,se\xF1a,senas,propuesta,Puede ser una se\xF1a propia o NO + ENTENDER; validar con la comunidad.
+REPETIR,repetir,repetir|repita|repite|otra vez|de nuevo,comunicacion,1,se\xF1a,senas,propuesta,
+DESPACIO,despacio,despacio|m\xE1s lento|lento|con calma,comunicacion,1,se\xF1a,senas,propuesta,
+ESCRIBIR,escribir,escribir|escriba|escribe|por escrito|anotar,comunicacion,1,se\xF1a,senas,propuesta,
+LEER,leer,leer|lea|lee,comunicacion,2,se\xF1a,senas,propuesta,
+HABLAR,hablar,hablar|hable|habla|decir|dice,comunicacion,2,se\xF1a,senas,propuesta,
+LLAMAR,llamar,llamar|llame|llamada,comunicacion,1,se\xF1a,senas,propuesta,
+AYUDAR,ayudar,ayudar|ayuda|ayudo|ay\xFAdeme|ayudarle|asistir,comunicacion,1,se\xF1a,senas,propuesta,
+ESPERAR,esperar,esperar|espere|un momento|aguarde,comunicacion,1,se\xF1a,senas,propuesta,
+QUE,qu\xE9,qu\xE9|que cosa,preguntas,1,se\xF1a,senas,propuesta,
+DONDE,d\xF3nde,d\xF3nde|en d\xF3nde|ad\xF3nde,preguntas,1,se\xF1a,senas,propuesta,
+CUANDO,cu\xE1ndo,cu\xE1ndo,preguntas,1,se\xF1a,senas,propuesta,
+CUANTO,cu\xE1nto,cu\xE1nto|cu\xE1nto cuesta|cu\xE1ntos|cu\xE1ntas|precio,preguntas,1,se\xF1a,senas,propuesta,
+QUIEN,qui\xE9n,qui\xE9n|qui\xE9nes,preguntas,1,se\xF1a,senas,propuesta,
+COMO,c\xF3mo,c\xF3mo|de qu\xE9 manera,preguntas,1,se\xF1a,senas,propuesta,
+POR-QUE,por qu\xE9,por qu\xE9|raz\xF3n|motivo,preguntas,2,se\xF1a,senas,propuesta,
+CUAL,cu\xE1l,cu\xE1l|cu\xE1les,preguntas,2,se\xF1a,senas,propuesta,
+SI,s\xED,s\xED|claro|de acuerdo|ok,respuestas,1,se\xF1a,senas,propuesta,
+NO,no,no|nada,respuestas,1,se\xF1a,senas,propuesta,
+BIEN,bien,bien|est\xE1 bien|correcto|bueno,respuestas,1,se\xF1a,senas,propuesta,
+MAL,mal,mal|incorrecto|malo,respuestas,2,se\xF1a,senas,propuesta,
+LISTO,listo,listo|lista|terminado|ya est\xE1|completo,respuestas,1,se\xF1a,senas,propuesta,
+PROBLEMA,problema,problema|inconveniente|dificultad,respuestas,1,se\xF1a,senas,propuesta,
+URGENTE,urgente,urgente|r\xE1pido|de prisa,respuestas,1,se\xF1a,senas,propuesta,
+IMPORTANTE,importante,importante,respuestas,2,se\xF1a,senas,propuesta,
+NECESITAR,necesitar,necesitar|necesito|necesita|hace falta,respuestas,1,se\xF1a,senas,propuesta,
+QUERER,querer,querer|quiero|quiere|desear|deseo|desea,respuestas,1,se\xF1a,senas,propuesta,
+PODER,poder,poder|puedo|puede|se puede,respuestas,1,se\xF1a,senas,propuesta,
+SABER,saber,saber|s\xE9|sabe,respuestas,2,se\xF1a,senas,propuesta,
+NO-SABER,no saber,no s\xE9|no sabe,respuestas,2,se\xF1a,senas,propuesta,Puede ser una se\xF1a propia o NO + SABER; validar.
+TENER,tener,tener|tengo|tiene|traje|trae,respuestas,1,se\xF1a,senas,propuesta,
+NO-TENER,no tener,no tengo|no tiene,respuestas,1,se\xF1a,senas,propuesta,Puede ser una se\xF1a propia o NO + TENER; validar.
+FALTAR,faltar,faltar|falta|le falta|me falta,respuestas,1,se\xF1a,senas,propuesta,
+YO,yo,yo|m\xED,personas,1,se\xF1a,senas,propuesta,Pronombre: en LSRD suele ser se\xF1alamiento; validar.
+TU,usted,usted|t\xFA,personas,1,se\xF1a,senas,propuesta,Pronombre: en LSRD suele ser se\xF1alamiento; validar.
+EL-ELLA,\xE9l o ella,\xE9l|ella|esa persona,personas,2,se\xF1a,senas,propuesta,Pronombre: en LSRD suele ser se\xF1alamiento; validar.
+NOSOTROS,nosotros,nosotros|nosotras,personas,2,se\xF1a,senas,propuesta,
+PERSONA,persona,persona|gente|ciudadano|ciudadana,personas,2,se\xF1a,senas,propuesta,
+FAMILIA,familia,familia|familiar|pariente,personas,2,se\xF1a,senas,propuesta,
+HIJO,hijo,hijo|hija|ni\xF1o|ni\xF1a,personas,2,se\xF1a,senas,propuesta,
+MADRE,madre,madre|mam\xE1,personas,2,se\xF1a,senas,propuesta,
+PADRE,padre,padre|pap\xE1,personas,2,se\xF1a,senas,propuesta,
+ESPOSO,esposo,esposo|esposa|pareja,personas,2,se\xF1a,senas,propuesta,
+EMPLEADO,empleado,empleado|empleada|funcionario|funcionaria|agente|encargado,personas,2,se\xF1a,senas,propuesta,
+ABOGADO,abogado,abogado|abogada|defensor|defensora,justicia,2,se\xF1a,senas,propuesta,
+JUEZ,juez,juez|jueza|magistrado|magistrada,justicia,2,se\xF1a,senas,propuesta,
+TRIBUNAL,tribunal,tribunal|juzgado|corte|palacio de justicia,justicia,2,se\xF1a,senas,propuesta,
+AUDIENCIA,audiencia,audiencia|vista,justicia,2,se\xF1a,senas,propuesta,
+EXPEDIENTE,expediente,expediente|caso|proceso,justicia,2,se\xF1a,senas,propuesta,
+DENUNCIA,denuncia,denuncia|denunciar|querella|querellarse,justicia,2,se\xF1a,senas,propuesta,
+CITACION,citaci\xF3n,citaci\xF3n|notificaci\xF3n|aviso,justicia,2,se\xF1a,senas,propuesta,
+TURNO,turno,turno|ficha|n\xFAmero de turno,tramites,1,se\xF1a,senas,propuesta,
+FILA,fila,fila|cola,tramites,1,se\xF1a,senas,propuesta,
+CITA,cita,cita|cita previa|agendar,tramites,1,se\xF1a,senas,propuesta,
+SOLICITUD,solicitud,solicitud|solicitar|aplicar|pedir|tr\xE1mite,tramites,1,se\xF1a,senas,propuesta,
+FORMULARIO,formulario,formulario|planilla|hoja,tramites,1,se\xF1a,senas,propuesta,
+FIRMAR,firmar,firmar|firma|firme,tramites,1,se\xF1a,senas,propuesta,
+DOCUMENTO,documento,documento|documentos|papeles|papel,tramites,1,se\xF1a,senas,propuesta,
+CEDULA,c\xE9dula,c\xE9dula|cedula|identificaci\xF3n|carnet,tramites,1,se\xF1a,senas,propuesta,
+PASAPORTE,pasaporte,pasaporte,tramites,2,se\xF1a,senas,propuesta,
+ACTA-NACIMIENTO,acta de nacimiento,acta de nacimiento|acta,tramites,1,se\xF1a,senas,propuesta,
+CERTIFICADO,certificado,certificado|certificaci\xF3n|constancia,tramites,1,se\xF1a,senas,propuesta,
+COPIA,copia,copia|fotocopia,tramites,1,se\xF1a,senas,propuesta,
+FOTO,foto,foto|fotograf\xEDa,tramites,2,se\xF1a,senas,propuesta,
+NOMBRE,nombre,nombre|se llama|me llamo,tramites,1,se\xF1a,senas,propuesta,
+APELLIDO,apellido,apellido|apellidos,tramites,2,se\xF1a,senas,propuesta,
+DIRECCION,direcci\xF3n,direcci\xF3n|domicilio|d\xF3nde vive,tramites,1,se\xF1a,senas,propuesta,
+TELEFONO,tel\xE9fono,tel\xE9fono|celular|n\xFAmero de tel\xE9fono,tramites,1,se\xF1a,senas,propuesta,
+CORREO,correo electr\xF3nico,correo|correo electr\xF3nico|email,tramites,2,se\xF1a,senas,propuesta,
+FECHA,fecha,fecha,tramites,1,se\xF1a,senas,propuesta,
+NACER,nacimiento,nacimiento|nacer|naci\xF3|fecha de nacimiento,tramites,2,se\xF1a,senas,propuesta,
+EDAD,edad,edad|a\xF1os de edad,tramites,2,se\xF1a,senas,propuesta,
+ENTREGAR,entregar,entregar|entregue|depositar|dejar,tramites,1,se\xF1a,senas,propuesta,
+RECIBIR,recibir,recibir|recibe|recibi\xF3,tramites,1,se\xF1a,senas,propuesta,
+ENVIAR,enviar,enviar|mandar|enviaremos,tramites,2,se\xF1a,senas,propuesta,
+REVISAR,revisar,revisar|verificar|comprobar|chequear,tramites,1,se\xF1a,senas,propuesta,
+APROBADO,aprobado,aprobado|aprobada|aceptado|aceptada,tramites,2,se\xF1a,senas,propuesta,
+PENDIENTE,pendiente,pendiente|en proceso|en tr\xE1mite,tramites,1,se\xF1a,senas,propuesta,
+OFICINA,oficina,oficina|departamento|\xE1rea,tramites,1,se\xF1a,senas,propuesta,
+VENTANILLA,ventanilla,ventanilla|m\xF3dulo|mostrador|caja,tramites,1,se\xF1a,senas,propuesta,
+PAGAR,pagar,pagar|pago|pague,dinero,1,se\xF1a,senas,propuesta,
+DINERO,dinero,dinero|pesos|plata,dinero,1,se\xF1a,senas,propuesta,
+GRATIS,gratis,gratis|gratuito|sin costo,dinero,1,se\xF1a,senas,propuesta,
+EFECTIVO,efectivo,efectivo|en efectivo,dinero,2,se\xF1a,senas,propuesta,
+TARJETA,tarjeta,tarjeta|tarjeta de cr\xE9dito|tarjeta de d\xE9bito,dinero,2,se\xF1a,senas,propuesta,
+RECIBO,recibo,recibo|comprobante|factura,dinero,1,se\xF1a,senas,propuesta,
+HOY,hoy,hoy,tiempo,1,se\xF1a,senas,propuesta,
+MA\xD1ANA,ma\xF1ana (d\xEDa siguiente),ma\xF1ana|el d\xEDa de ma\xF1ana,tiempo,1,se\xF1a,senas,propuesta,Distinta de POR-LA-MA\xD1ANA (horario); validar.
+AYER,ayer,ayer,tiempo,1,se\xF1a,senas,propuesta,
+AHORA,ahora,ahora|ahorita|ya,tiempo,1,se\xF1a,senas,propuesta,
+DESPUES,despu\xE9s,despu\xE9s|luego|m\xE1s tarde,tiempo,1,se\xF1a,senas,propuesta,
+ANTES,antes,antes|primero,tiempo,2,se\xF1a,senas,propuesta,
+HORA,hora,hora|qu\xE9 hora|horario,tiempo,1,se\xF1a,senas,propuesta,
+MINUTO,minuto,minuto|minutos,tiempo,2,se\xF1a,senas,propuesta,
+DIA,d\xEDa,d\xEDa|d\xEDas,tiempo,1,se\xF1a,senas,propuesta,
+SEMANA,semana,semana|semanas|pr\xF3xima semana,tiempo,1,se\xF1a,senas,propuesta,
+MES,mes,mes|meses,tiempo,2,se\xF1a,senas,propuesta,
+A\xD1O,a\xF1o,a\xF1o|a\xF1os,tiempo,2,se\xF1a,senas,propuesta,
+POR-LA-MA\xD1ANA,por la ma\xF1ana,en la ma\xF1ana|de la ma\xF1ana|temprano en la ma\xF1ana,tiempo,2,se\xF1a,senas,propuesta,
+POR-LA-TARDE,por la tarde,en la tarde|de la tarde,tiempo,2,se\xF1a,senas,propuesta,
+TARDE,tarde (retraso),tarde|retraso|atrasado,tiempo,2,se\xF1a,senas,propuesta,Distinta de POR-LA-TARDE (horario); validar.
+TEMPRANO,temprano,temprano,tiempo,2,se\xF1a,senas,propuesta,
+LUNES,lunes,lunes,tiempo,1,se\xF1a,senas,propuesta,
+MARTES,martes,martes,tiempo,1,se\xF1a,senas,propuesta,
+MIERCOLES,mi\xE9rcoles,mi\xE9rcoles,tiempo,1,se\xF1a,senas,propuesta,
+JUEVES,jueves,jueves,tiempo,1,se\xF1a,senas,propuesta,
+VIERNES,viernes,viernes,tiempo,1,se\xF1a,senas,propuesta,
+SABADO,s\xE1bado,s\xE1bado,tiempo,2,se\xF1a,senas,propuesta,
+DOMINGO,domingo,domingo,tiempo,2,se\xF1a,senas,propuesta,
+AQUI,aqu\xED,aqu\xED|ac\xE1|este lugar,lugares,1,se\xF1a,senas,propuesta,
+ALLA,all\xE1,all\xE1|all\xED|ah\xED,lugares,1,se\xF1a,senas,propuesta,
+BA\xD1O,ba\xF1o,ba\xF1o|sanitario,lugares,1,se\xF1a,senas,propuesta,
+SALIDA,salida,salida,lugares,1,se\xF1a,senas,propuesta,
+ENTRADA,entrada,entrada,lugares,2,se\xF1a,senas,propuesta,
+PISO,piso,piso|planta|nivel,lugares,2,se\xF1a,senas,propuesta,
+DERECHA,derecha,a la derecha|derecha,lugares,1,se\xF1a,senas,propuesta,
+IZQUIERDA,izquierda,a la izquierda|izquierda,lugares,1,se\xF1a,senas,propuesta,
+RECTO,recto,recto|de frente|todo derecho|siga derecho,lugares,1,se\xF1a,senas,propuesta,
+CASA,casa,casa|hogar,lugares,2,se\xF1a,senas,propuesta,
+TRABAJO,trabajo,trabajo|trabajar|empleo,lugares,2,se\xF1a,senas,propuesta,
+IR,ir,ir|vaya|voy|va,acciones,1,se\xF1a,senas,propuesta,
+VENIR,venir,venir|venga|vengo|viene,acciones,1,se\xF1a,senas,propuesta,
+VOLVER,volver,volver|vuelva|regresar|regrese,acciones,1,se\xF1a,senas,propuesta,
+PASAR,pasar,pase|pasar|adelante|entre,acciones,1,se\xF1a,senas,propuesta,
+SENTAR,sentarse,si\xE9ntese|sentarse|tome asiento|asiento,acciones,1,se\xF1a,senas,propuesta,
+MOSTRAR,mostrar,mostrar|mu\xE9streme|ense\xF1ar|ense\xF1e|me permite|perm\xEDtame,acciones,1,se\xF1a,senas,propuesta,
+DAR,dar,dar|deme|me da|le doy,acciones,1,se\xF1a,senas,propuesta,
+TRAER,traer,traer|traiga,acciones,1,se\xF1a,senas,propuesta,
+LLENAR,llenar,llenar|llene|completar|complete,acciones,1,se\xF1a,senas,propuesta,
+TERMINAR,terminar,terminar|termin\xF3|acabar|finalizar,acciones,2,se\xF1a,senas,propuesta,
+EMPEZAR,empezar,empezar|comenzar|iniciar,acciones,2,se\xF1a,senas,propuesta,
+CAMBIAR,cambiar,cambiar|cambio|modificar,acciones,2,se\xF1a,senas,propuesta,
+PERDER,perder,perder|perd\xED|perdi\xF3|extraviar,acciones,1,se\xF1a,senas,propuesta,
+BUSCAR,buscar,buscar|busque,acciones,2,se\xF1a,senas,propuesta,
+ROBAR,robar,robo|robar|me robaron|asalto,justicia,2,se\xF1a,senas,propuesta,
+ENFERMO,enfermo,enfermo|enferma|me siento mal,salud,2,se\xF1a,senas,propuesta,
+DOLOR,dolor,dolor|me duele|duele,salud,2,se\xF1a,senas,propuesta,
+EMERGENCIA,emergencia,emergencia|auxilio|socorro,salud,1,se\xF1a,senas,propuesta,
+MEDICO,m\xE9dico,m\xE9dico|m\xE9dica|doctor|doctora,salud,2,se\xF1a,senas,propuesta,
+NUM-0,0,cero,numeros,1,numero,senas,propuesta,
+NUM-1,1,uno|una,numeros,1,numero,senas,propuesta,
+NUM-2,2,dos,numeros,1,numero,senas,propuesta,
+NUM-3,3,tres,numeros,1,numero,senas,propuesta,
+NUM-4,4,cuatro,numeros,1,numero,senas,propuesta,
+NUM-5,5,cinco,numeros,1,numero,senas,propuesta,
+NUM-6,6,seis,numeros,1,numero,senas,propuesta,
+NUM-7,7,siete,numeros,1,numero,senas,propuesta,
+NUM-8,8,ocho,numeros,1,numero,senas,propuesta,
+NUM-9,9,nueve,numeros,1,numero,senas,propuesta,
+NUM-10,10,diez,numeros,1,numero,senas,propuesta,
+LETRA-A,a,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-B,b,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-C,c,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-D,d,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-E,e,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-F,f,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-G,g,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-H,h,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-I,i,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-J,j,,dactilologico,1,letra,dactilologia,propuesta,Letra con movimiento; el clasificador est\xE1tico puede confundirla con I.
+LETRA-K,k,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-L,l,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-M,m,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-N,n,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-\xD1,\xF1,,dactilologico,1,letra,dactilologia,propuesta,Letra con movimiento; validar forma en LSRD.
+LETRA-O,o,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-P,p,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-Q,q,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-R,r,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-S,s,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-T,t,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-U,u,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-V,v,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-W,w,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-X,x,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-Y,y,,dactilologico,1,letra,dactilologia,propuesta,
+LETRA-Z,z,,dactilologico,1,letra,dactilologia,propuesta,Letra con movimiento; el clasificador est\xE1tico puede fallar.
+`;var je=`glosa,espanol,resultado,titulo_oficial,url,notas\r
+HOLA,hola,encontrada,Hola,https://diccionariolsrd.cc/diccionario/hola/,\r
+BUENOS-DIAS,buenos d\xEDas,encontrada,Buenos D\xEDas,https://diccionariolsrd.cc/diccionario/buenos-dias/,\r
+BUENAS-TARDES,buenas tardes,encontrada,Buenas Tardes,https://diccionariolsrd.cc/diccionario/buenas-tardes/,\r
+BUENAS-NOCHES,buenas noches,encontrada,Buenas Noches,https://diccionariolsrd.cc/diccionario/buenas-noches/,\r
+ADIOS,adi\xF3s,encontrada,Adi\xF3s,https://diccionariolsrd.cc/diccionario/adios/,\r
+GRACIAS,gracias,encontrada,Gracias,https://diccionariolsrd.cc/diccionario/gracias/,\r
+POR-FAVOR,por favor,encontrada,Por Favor,https://diccionariolsrd.cc/diccionario/por-favor/,\r
+PERDON,perd\xF3n,no_localizada,,,\r
+DE-NADA,de nada,no_localizada,,,\r
+BIENVENIDO,bienvenido,no_localizada,,,\r
+MUCHO-GUSTO,mucho gusto,no_localizada,,,\r
+SORDO,sordo,encontrada,Persona Sorda,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+OYENTE,oyente,no_localizada,,,\r
+INTERPRETE,int\xE9rprete,no_localizada,,,\r
+LENGUA-DE-SE\xD1AS,lengua de se\xF1as,encontrada,Lengua de se\xF1as,https://diccionariolsrd.cc/diccionario/lengua-de-senas/,\r
+ENTENDER,entender,encontrada,Entender,https://diccionariolsrd.cc/diccionario/entender/,\r
+NO-ENTENDER,no entender,no_localizada,,,\r
+REPETIR,repetir,no_localizada,,,\r
+DESPACIO,despacio,encontrada,Despacio,https://diccionariolsrd.cc/diccionario/despacio/,\r
+ESCRIBIR,escribir,encontrada,Escribir,https://diccionariolsrd.cc/diccionario/escribir/,\r
+LEER,leer,encontrada,Leer,https://diccionariolsrd.cc/diccionario/leer/,\r
+HABLAR,hablar,encontrada,Hablar,https://diccionariolsrd.cc/diccionario/hablar/,\r
+LLAMAR,llamar,no_localizada,,,\r
+AYUDAR,ayudar,encontrada,Ayudar,https://diccionariolsrd.cc/diccionario/ayudar/,\r
+ESPERAR,esperar,encontrada,Esperar,https://diccionariolsrd.cc/diccionario/esperar/,\r
+QUE,qu\xE9,no_localizada,,,\r
+DONDE,d\xF3nde,no_localizada,,,\r
+CUANDO,cu\xE1ndo,no_localizada,,,\r
+CUANTO,cu\xE1nto,no_localizada,,,\r
+QUIEN,qui\xE9n,no_localizada,,,\r
+COMO,c\xF3mo,encontrada,C\xF3mo,https://diccionariolsrd.cc/diccionario/como/,\r
+POR-QUE,por qu\xE9,no_localizada,,,\r
+CUAL,cu\xE1l,no_localizada,,,\r
+SI,s\xED,encontrada,Si,https://diccionariolsrd.cc/diccionario/si/,\r
+NO,no,encontrada,No,https://diccionariolsrd.cc/diccionario/no/,\r
+BIEN,bien,encontrada,Bien,https://diccionariolsrd.cc/diccionario/bien/,\r
+MAL,mal,encontrada,Mal,https://diccionariolsrd.cc/diccionario/mal/,\r
+LISTO,listo,no_localizada,,,\r
+PROBLEMA,problema,encontrada,Problema,https://diccionariolsrd.cc/diccionario/problema/,\r
+URGENTE,urgente,no_localizada,,,\r
+IMPORTANTE,importante,encontrada,Importante,https://diccionariolsrd.cc/diccionario/importante/,\r
+NECESITAR,necesitar,encontrada,Necesitar,https://diccionariolsrd.cc/diccionario/necesitar/,\r
+QUERER,querer,encontrada,Querer,https://diccionariolsrd.cc/diccionario/querer/,\r
+PODER,poder,no_localizada,,,\r
+SABER,saber,encontrada,Saber,https://diccionariolsrd.cc/diccionario/saber/,\r
+NO-SABER,no saber,no_localizada,,,\r
+TENER,tener,no_localizada,,,\r
+NO-TENER,no tener,no_localizada,,,\r
+FALTAR,faltar,encontrada,Falta,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+YO,yo,no_localizada,,,\r
+TU,usted,no_localizada,,,\r
+EL-ELLA,\xE9l o ella,no_localizada,,,\r
+NOSOTROS,nosotros,no_localizada,,,\r
+PERSONA,persona,encontrada,Persona,https://diccionariolsrd.cc/diccionario/persona/,\r
+FAMILIA,familia,encontrada,Familia,https://diccionariolsrd.cc/diccionario/familia/,\r
+HIJO,hijo,encontrada,Hijo,https://diccionariolsrd.cc/diccionario/hijo/,\r
+MADRE,madre,encontrada,Mam\xE1,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+PADRE,padre,encontrada,Pap\xE1,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+ESPOSO,esposo,encontrada,Esposo,https://diccionariolsrd.cc/diccionario/esposo/,\r
+EMPLEADO,empleado,no_localizada,,,\r
+ABOGADO,abogado,no_localizada,,,\r
+JUEZ,juez,no_localizada,,,\r
+TRIBUNAL,tribunal,no_localizada,,,\r
+AUDIENCIA,audiencia,no_localizada,,,\r
+EXPEDIENTE,expediente,no_localizada,,,\r
+DENUNCIA,denuncia,no_localizada,,,\r
+CITACION,citaci\xF3n,no_localizada,,,\r
+TURNO,turno,no_localizada,,,\r
+FILA,fila,encontrada,Fila,https://diccionariolsrd.cc/diccionario/fila/,\r
+CITA,cita,encontrada,Cita (general),https://diccionariolsrd.cc/diccionario/cita-general/,\r
+SOLICITUD,solicitud,no_localizada,,,\r
+FORMULARIO,formulario,no_localizada,,,\r
+FIRMAR,firmar,no_localizada,,,\r
+DOCUMENTO,documento,no_localizada,,,\r
+CEDULA,c\xE9dula,no_localizada,,,\r
+PASAPORTE,pasaporte,no_localizada,,,\r
+ACTA-NACIMIENTO,acta de nacimiento,no_localizada,,,\r
+CERTIFICADO,certificado,no_localizada,,,\r
+COPIA,copia,encontrada,Copia,https://diccionariolsrd.cc/diccionario/copia/,\r
+FOTO,foto,no_localizada,,,\r
+NOMBRE,nombre,no_localizada,,,\r
+APELLIDO,apellido,no_localizada,,,\r
+DIRECCION,direcci\xF3n,encontrada,Direcci\xF3n,https://diccionariolsrd.cc/diccionario/direccion/,\r
+TELEFONO,tel\xE9fono,encontrada,Tel\xE9fono,https://diccionariolsrd.cc/diccionario/telefono/,\r
+CORREO,correo electr\xF3nico,no_localizada,,,\r
+FECHA,fecha,encontrada,Fecha,https://diccionariolsrd.cc/diccionario/fecha/,\r
+NACER,nacimiento,no_localizada,,,\r
+EDAD,edad,encontrada,Edad,https://diccionariolsrd.cc/diccionario/edad/,\r
+ENTREGAR,entregar,no_localizada,,,\r
+RECIBIR,recibir,encontrada,Recibir,https://diccionariolsrd.cc/diccionario/recibir/,\r
+ENVIAR,enviar,no_localizada,,,\r
+REVISAR,revisar,encontrada,Revisar,https://diccionariolsrd.cc/diccionario/revisar/,\r
+APROBADO,aprobado,no_localizada,,,\r
+PENDIENTE,pendiente,no_localizada,,,\r
+OFICINA,oficina,encontrada,Oficina,https://diccionariolsrd.cc/diccionario/oficina/,\r
+VENTANILLA,ventanilla,no_localizada,,,\r
+PAGAR,pagar,encontrada,Pagar,https://diccionariolsrd.cc/diccionario/pagar/,\r
+DINERO,dinero,encontrada,Dinero,https://diccionariolsrd.cc/diccionario/dinero/,\r
+GRATIS,gratis,no_localizada,,,\r
+EFECTIVO,efectivo,no_localizada,,,\r
+TARJETA,tarjeta,no_localizada,,,\r
+RECIBO,recibo,no_localizada,,,\r
+HOY,hoy,encontrada,Hoy,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+MA\xD1ANA,ma\xF1ana (d\xEDa siguiente),no_localizada,,,\r
+AYER,ayer,no_localizada,,,\r
+AHORA,ahora,encontrada,Ahora,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+DESPUES,despu\xE9s,encontrada,Desp\xFAes,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+ANTES,antes,encontrada,Antes,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+HORA,hora,no_localizada,,,\r
+MINUTO,minuto,no_localizada,,,\r
+DIA,d\xEDa,no_localizada,,,\r
+SEMANA,semana,no_localizada,,,\r
+MES,mes,no_localizada,,,\r
+A\xD1O,a\xF1o,no_localizada,,,\r
+POR-LA-MA\xD1ANA,por la ma\xF1ana,no_localizada,,,\r
+POR-LA-TARDE,por la tarde,no_localizada,,,\r
+TARDE,tarde (retraso),encontrada,Tarde,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+TEMPRANO,temprano,encontrada,Temprano,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+LUNES,lunes,no_localizada,,,\r
+MARTES,martes,no_localizada,,,\r
+MIERCOLES,mi\xE9rcoles,no_localizada,,,\r
+JUEVES,jueves,no_localizada,,,\r
+VIERNES,viernes,no_localizada,,,\r
+SABADO,s\xE1bado,no_localizada,,,\r
+DOMINGO,domingo,no_localizada,,,\r
+AQUI,aqu\xED,encontrada,Aqu\xED,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+ALLA,all\xE1,encontrada,All\xE1,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+BA\xD1O,ba\xF1o,no_localizada,,,\r
+SALIDA,salida,no_localizada,,,\r
+ENTRADA,entrada,encontrada,Entrada,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+PISO,piso,no_localizada,,,\r
+DERECHA,derecha,encontrada,Derecha,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+IZQUIERDA,izquierda,encontrada,Izquierda,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+RECTO,recto,no_localizada,,,\r
+CASA,casa,encontrada,Casa,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+TRABAJO,trabajo,encontrada,Trabajar,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+IR,ir,no_localizada,,,\r
+VENIR,venir,no_localizada,,,\r
+VOLVER,volver,no_localizada,,,\r
+PASAR,pasar,no_localizada,,,\r
+SENTAR,sentarse,no_localizada,,,\r
+MOSTRAR,mostrar,no_localizada,,,\r
+DAR,dar,no_localizada,,,\r
+TRAER,traer,no_localizada,,,\r
+LLENAR,llenar,no_localizada,,,\r
+TERMINAR,terminar,no_localizada,,,\r
+EMPEZAR,empezar,no_localizada,,,\r
+CAMBIAR,cambiar,encontrada,Cambio,,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+PERDER,perder,no_localizada,,,\r
+BUSCAR,buscar,no_localizada,,,\r
+ROBAR,robar,no_localizada,,,\r
+ENFERMO,enfermo,encontrada,"Enfermo, enferma",,T\xEDtulo cercano; falta confirmar la direcci\xF3n de la entrada.\r
+DOLOR,dolor,no_localizada,,,\r
+EMERGENCIA,emergencia,no_localizada,,,\r
+MEDICO,m\xE9dico,no_localizada,,,\r
+`;var Pe=`id,espanol,glosas,direccion,rapida,estado,contexto
+F001,"Buenos d\xEDas, \xBFen qu\xE9 le puedo ayudar?",,oyente_a_sordo,1,pendiente,saludo inicial
+F002,"Un momento, por favor.",,oyente_a_sordo,1,pendiente,espera
+F003,"Por favor, tome un turno y espere.",,oyente_a_sordo,1,pendiente,turnos
+F004,\xBFMe permite su c\xE9dula?,,oyente_a_sordo,1,pendiente,identificaci\xF3n
+F005,Necesito una copia de su c\xE9dula.,,oyente_a_sordo,0,pendiente,identificaci\xF3n
+F006,"Por favor, llene este formulario.",,oyente_a_sordo,1,pendiente,formularios
+F007,"Firme aqu\xED, por favor.",,oyente_a_sordo,1,pendiente,formularios
+F008,\xBFCu\xE1l es su nombre?,,oyente_a_sordo,1,pendiente,datos personales
+F009,\xBFCu\xE1l es su n\xFAmero de tel\xE9fono?,,oyente_a_sordo,0,pendiente,datos personales
+F010,\xBFTiene cita?,,oyente_a_sordo,1,pendiente,citas
+F011,Su cita es ma\xF1ana.,,oyente_a_sordo,0,pendiente,citas
+F012,Vuelva la pr\xF3xima semana.,,oyente_a_sordo,0,pendiente,citas
+F013,Su tr\xE1mite est\xE1 listo.,,oyente_a_sordo,1,pendiente,estado del tr\xE1mite
+F014,Su tr\xE1mite est\xE1 pendiente.,,oyente_a_sordo,1,pendiente,estado del tr\xE1mite
+F015,Le falta un documento.,,oyente_a_sordo,1,pendiente,requisitos
+F016,Debe pagar en la caja.,,oyente_a_sordo,0,pendiente,pagos
+F017,Es gratis.,,oyente_a_sordo,0,pendiente,pagos
+F018,El ba\xF1o est\xE1 a la derecha.,,oyente_a_sordo,0,pendiente,orientaci\xF3n
+F019,La salida est\xE1 all\xE1.,,oyente_a_sordo,0,pendiente,orientaci\xF3n
+F020,"Pase, por favor.",,oyente_a_sordo,1,pendiente,atenci\xF3n
+F021,"Tome asiento, por favor.",,oyente_a_sordo,1,pendiente,atenci\xF3n
+F022,\xBFEntendi\xF3?,,oyente_a_sordo,1,pendiente,comprobaci\xF3n
+F023,Gracias por su paciencia.,,oyente_a_sordo,0,pendiente,cortes\xEDa
+F024,\xBFNecesita un int\xE9rprete?,,oyente_a_sordo,1,pendiente,accesibilidad
+F025,Vamos a llamar a un int\xE9rprete.,,oyente_a_sordo,1,pendiente,accesibilidad
+F026,Puede escribirlo aqu\xED.,,oyente_a_sordo,1,pendiente,comunicaci\xF3n
+F027,Su audiencia es el lunes por la ma\xF1ana.,,oyente_a_sordo,0,pendiente,justicia
+F028,Debe traer su acta de nacimiento.,,oyente_a_sordo,0,pendiente,requisitos
+F029,Le enviaremos la respuesta por correo.,,oyente_a_sordo,0,pendiente,seguimiento
+F030,\xBFQu\xE9 documento necesita?,,oyente_a_sordo,0,pendiente,requisitos
+F031,Buenos d\xEDas.,,sordo_a_oyente,1,pendiente,saludo
+F032,Soy sordo.,,sordo_a_oyente,1,pendiente,presentaci\xF3n
+F033,Necesito un int\xE9rprete.,,sordo_a_oyente,1,pendiente,accesibilidad
+F034,No entiendo.,,sordo_a_oyente,1,pendiente,comunicaci\xF3n
+F035,"Repita, por favor.",,sordo_a_oyente,1,pendiente,comunicaci\xF3n
+F036,"M\xE1s despacio, por favor.",,sordo_a_oyente,1,pendiente,comunicaci\xF3n
+F037,"Por favor, escr\xEDbalo.",,sordo_a_oyente,1,pendiente,comunicaci\xF3n
+F038,Quiero hacer una solicitud.,,sordo_a_oyente,0,pendiente,tr\xE1mites
+F039,Necesito una cita.,,sordo_a_oyente,0,pendiente,citas
+F040,\xBFD\xF3nde est\xE1 el ba\xF1o?,,sordo_a_oyente,0,pendiente,orientaci\xF3n
+F041,\xBFCu\xE1nto cuesta?,,sordo_a_oyente,0,pendiente,pagos
+F042,\xBFCu\xE1ndo est\xE1 listo?,,sordo_a_oyente,0,pendiente,estado del tr\xE1mite
+F043,Perd\xED mi c\xE9dula.,,sordo_a_oyente,0,pendiente,identificaci\xF3n
+F044,Quiero poner una denuncia.,,sordo_a_oyente,0,pendiente,justicia
+F045,Tengo una audiencia hoy.,,sordo_a_oyente,0,pendiente,justicia
+F046,\xBFA d\xF3nde tengo que ir?,,sordo_a_oyente,0,pendiente,orientaci\xF3n
+F047,\xBFQu\xE9 documentos necesito?,,sordo_a_oyente,0,pendiente,requisitos
+F048,Gracias.,,sordo_a_oyente,1,pendiente,cortes\xEDa
+F049,Es urgente.,,sordo_a_oyente,1,pendiente,prioridad
+F050,Necesito ayuda.,,sordo_a_oyente,1,pendiente,ayuda
+`;var Le=`id,espanol,glosas,direccion,rapida,estado,contexto
+E001,Necesito ayuda urgente.,,sordo_a_oyente,1,pendiente,pedir ayuda
+E002,"Llame al 9-1-1, por favor.",,sordo_a_oyente,1,pendiente,pedir ayuda
+E003,"Soy una persona sorda. Por favor, escr\xEDbame o h\xE1bleme despacio.",,sordo_a_oyente,1,pendiente,identificarse
+E004,Necesito un int\xE9rprete de lengua de se\xF1as.,,sordo_a_oyente,1,pendiente,identificarse
+E005,Necesito un m\xE9dico.,,sordo_a_oyente,1,pendiente,salud
+E006,Me siento muy mal.,,sordo_a_oyente,1,pendiente,salud
+E007,Tuve un accidente.,,sordo_a_oyente,1,pendiente,accidente
+E008,Me robaron.,,sordo_a_oyente,1,pendiente,seguridad
+E009,Estoy perdido. Necesito llegar a esta direcci\xF3n.,,sordo_a_oyente,1,pendiente,ubicaci\xF3n
+E010,"Por favor, avise a mi familia.",,sordo_a_oyente,1,pendiente,familia
+E011,\xBFEst\xE1 usted bien?,,oyente_a_sordo,1,pendiente,primer contacto
+E012,\xBFNecesita un m\xE9dico?,,oyente_a_sordo,1,pendiente,primer contacto
+E013,La ayuda viene en camino.,,oyente_a_sordo,1,pendiente,tranquilizar
+E014,"Qu\xE9dese aqu\xED, por favor.",,oyente_a_sordo,1,pendiente,instrucci\xF3n
+E015,"Salga del edificio ahora, por favor.",,oyente_a_sordo,1,pendiente,evacuaci\xF3n
+E016,"Venga conmigo, por favor.",,oyente_a_sordo,1,pendiente,instrucci\xF3n
+`;var ze=new Set(["QUE","DONDE","CUANDO","CUANTO","QUIEN","COMO","POR-QUE","CUAL"]),ne=new Set("el la los las un una unos unas lo de del al a en y e o u que se le les me te nos su sus mi mis tu tus por para con sin es son era fue est\xE1 est\xE1n esta este estos estas ese esa eso muy como si ya pero porque cuando donde hay ser estar ha he han hemos va debe debo deben usted ustedes".split(" "));function Ea(o){return(o||"").toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu," ").replace(/\s+/g," ").trim()}function Aa(o){return(o||"").replace(/ñ/g,"").replace(/Ñ/g,"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\u0001/g,"\xF1").replace(/\u0002/g,"\xD1")}var B=o=>Aa(Ea(o));function Ia(o){let a=[],e=[],t="",s=!1;for(let c=0;c<o.length;c++){let n=o[c];if(s){n==='"'?o[c+1]==='"'?(t+='"',c++):s=!1:t+=n;continue}n==='"'?s=!0:n===","?(e.push(t),t=""):n==="\r"||n==="\uFEFF"||(n===`
+`?(e.push(t),t="",a.push(e),e=[]):t+=n)}if((t.length>0||e.length>0)&&(e.push(t),a.push(e)),a.length===0)return[];let r=a[0].map(c=>c.trim());return a.slice(1).filter(c=>!(c.length===1&&c[0]==="")).map(c=>Object.fromEntries(r.map((n,p)=>[n,c[p]??""])))}var we=/^NUM-(\d+)$/,Pa=class o{constructor(a,e=[],t=[]){var r,c;this.entradas=[],this.porGlosa=new Map,this.indice=new Map,this.indiceSinTildes=new Map,this.letras=new Map,this.maxPalabras=1;let s=new Map(e.filter(n=>n.resultado==="encontrada").map(n=>[n.glosa,n]));for(let n of a)this.agregar({glosa:n.glosa.trim(),espanol:n.espanol.trim(),sinonimos:(n.sinonimos||"").split("|").map(p=>p.trim()).filter(Boolean),categoria:n.categoria.trim(),prioridad:parseInt(n.prioridad,10)||2,tipo:n.tipo.trim(),estado:n.estado.trim(),tituloOficial:((r=s.get(n.glosa.trim()))==null?void 0:r.titulo_oficial)||"",urlOficial:((c=s.get(n.glosa.trim()))==null?void 0:c.url)||""});for(let n of t)this.agregarPropia(n.espanol,n.glosa)}agregar(a){if(this.porGlosa.has(a.glosa))return this.porGlosa.get(a.glosa);if(a.espanolCorto=a.espanol.split(" (")[0],a.terminos=[...new Set([a.espanol,a.glosa.replace(/-/g," "),...a.sinonimos].map(B).filter(Boolean))],this.entradas.push(a),this.porGlosa.set(a.glosa,a),a.tipo==="letra")return this.letras.set(a.espanol.toLowerCase(),a.glosa),a;if(a.tipo==="fondo")return a;for(let e of[a.espanol,...a.sinonimos]){let t=Ea(e);if(!t||e.trim().startsWith("("))continue;this.indice.has(t)||this.indice.set(t,a.glosa);let s=Aa(t);this.indiceSinTildes.has(s)||this.indiceSinTildes.set(s,a.glosa),this.maxPalabras=Math.max(this.maxPalabras,t.split(" ").length)}return a}static glosaDe(a){return Aa(Ea(a)).toUpperCase().replace(/\s+/g,"-")}agregarPropia(a,e){let t=(a||"").trim().replace(/\s+/g," ");if(!t)return null;let s=this.buscar(Ea(t));if(s)return this.porGlosa.get(s);let r=e||o.glosaDe(t);return r?this.agregar({glosa:r,espanol:t,sinonimos:[],categoria:"propias",prioridad:1,tipo:"se\xF1a",estado:"propia",propia:!0,tituloOficial:"",urlOficial:""}):null}existe(a){let e=this.porGlosa.get(a);return!!e&&e.tipo!=="fondo"}buscar(a){return this.indice.has(a)?this.indice.get(a):ne.has(a)?null:this.indiceSinTildes.get(Aa(a))||null}espanolDe(a){if(a.startsWith("DACT:"))return a.slice(5);let e=we.exec(a);if(e)return e[1];let t=this.porGlosa.get(a);return t?t.espanolCorto:a.toLowerCase().replace(/-/g," ")}deletreo(a){let e=[];for(let t of Aa(a.toLowerCase())){let s=this.letras.get(t);s&&e.push(s)}return e}get categorias(){return[...new Set(this.entradas.filter(a=>a.tipo!=="fondo").map(a=>a.categoria))].sort()}consultar(a,e=null){let t=B(a||""),s=[],r=[];for(let c of this.entradas)if(!(c.tipo==="fondo"||e&&c.categoria!==e)){if(!t){s.push(c);continue}c.terminos.some(n=>n.startsWith(t))?s.push(c):c.terminos.some(n=>n.includes(t))&&r.push(c)}if(t){let c=(n,p)=>B(n.espanol)<B(p.espanol)?-1:B(n.espanol)>B(p.espanol)?1:0;s.sort(c),r.sort(c)}return s.concat(r)}literal(a){let e=Ea(a).split(" ").filter(Boolean),t=[],s=0;for(;s<e.length;){let r=null,c=Math.min(this.maxPalabras,e.length-s);for(;c>0&&(r=this.buscar(e.slice(s,s+c).join(" ")),!r);c--);if(r){t.push(r),s+=c;continue}let n=e[s++];/^\d+$/.test(n)?t.push(...Number(n)<=10&&n.length<=2?["NUM-"+Number(n)]:[...n].map(p=>"NUM-"+p)):ne.has(n)||t.push("DACT:"+n)}return t}plan(a){let e=[];for(let t of a){let s=t.trim();if(s.toUpperCase().startsWith("DACT:")){let n=s.slice(5).trim().toLowerCase();e.push({deletreo:!0,palabra:n,letras:this.deletreo(n)});continue}let r=we.exec(s);if(r&&!this.existe(s)){for(let n of r[1])e.push({glosa:"NUM-"+n,espanol:n});continue}if(this.existe(s)){let n=this.porGlosa.get(s);n.tipo==="letra"?e.push({deletreo:!0,palabra:n.espanol,letras:[s]}):e.push({glosa:s,espanol:this.espanolDe(s)});continue}let c=s.replace(/-/g," ").toLowerCase();e.push({deletreo:!0,palabra:c,letras:this.deletreo(c)})}return e}textoAGlosas(a){let e=(a||"").trim(),t=this.literal(e);return{texto:e,glosas:t,plan:this.plan(t),pregunta:/[?¿]/.test(e)}}glosasATexto(a){let e=a.map(s=>s.trim()).filter(s=>s&&s!=="_FONDO");if(e.length===0)return"";let t=e.map(s=>this.espanolDe(s)).join(" ").trim();return t?(t=t[0].toUpperCase()+t.slice(1),e.some(s=>ze.has(s))?`\xBF${t}?`:`${t}.`):""}};function ie(o){return Ia(o).map(a=>({id:a.id,espanol:a.espanol.trim(),direccion:a.direccion.trim(),rapida:a.rapida.trim()==="1",glosas:(a.glosas||"").split(/\s+/).filter(Boolean),estado:a.estado.trim(),contexto:(a.contexto||"").trim()}))}var qo={tramites:"Tr\xE1mites",comunicacion:"Comunicaci\xF3n",cortesia:"Cortes\xEDa",dactilologico:"Alfabeto manual",numeros:"N\xFAmeros",propias:"Mis se\xF1as"};function Ra(o){return qo[o]||(o?o[0].toUpperCase()+o.slice(1):"")}var ce="LSRD-LM v1",Ue=[0,11,12,13,14,15,16],Be=[61,291,0,17,13,14,78,308,70,63,105,66,107,300,293,334,296,336,33,133,159,145,263,362,386,374,1,152,10],oa=21,G=0,ia=9,qe=0,q=7,ca=28,Na=49,La=78;var j=234,za=0,L=1,z=2;var wa=7,Ua=28,ta=32,Ba=[[1,2],[1,3],[3,5],[2,4],[4,6],[7,8],[8,9],[9,10],[10,11],[7,12],[12,13],[13,14],[14,15],[12,16],[16,17],[17,18],[18,19],[16,20],[20,21],[21,22],[22,23],[20,24],[7,24],[24,25],[25,26],[26,27],[28,29],[29,30],[30,31],[31,32],[28,33],[33,34],[34,35],[35,36],[33,37],[37,38],[38,39],[39,40],[37,41],[41,42],[42,43],[43,44],[41,45],[28,45],[45,46],[46,47],[47,48]];var ke={inicio_ms:100,fin_ms:250,min_ms:250,max_ms:3e3,quietud_ms:400,umbral_velocidad:.5,linea_reposo:1.5,usar_quietud:!0,factor_mano_a_hombros:3.5};var ya=0,le=1,ka=2,ko=3,Ve=()=>({...ke});function S(o,a){let e=a*3;return Math.abs(o[e])+Math.abs(o[e+1])+Math.abs(o[e+2])>0}function Va(o,a,e,t){let s=o[a*3]-e[t*3],r=o[a*3+1]-e[t*3+1];return Math.sqrt(s*s+r*r)}function Vo(o,a){if(S(o,L)&&S(o,z))return Va(o,L,o,z);for(let e of[q,ca])if(S(o,e+G)&&S(o,e+ia))return a.factor_mano_a_hombros*Va(o,e+G,o,e+ia);return 0}function Ho(o,a,e,t){let s=[wa,Ua],r=s.filter(f=>S(o,f));if(r.length===0)return[!1,0];let c=S(o,L)&&S(o,z),n=!1;if(c){let f=Va(o,L,o,z),h=(o[L*3+1]+o[z*3+1])/2;for(let E of r)(f<1e-6||o[E*3+1]<h+t.linea_reposo*f)&&(n=!0)}else n=!0;let p=1/0,g=Vo(o,t);if(a&&e>0&&g>1e-6){let f=-1;for(let h of s)if(S(o,h)&&S(a,h)){let E=Va(o,h,a,h)/g/e;E>f&&(f=E)}f>=0&&(p=f)}return[n,p]}var pe=class{constructor(a){this.p=a||Ve(),this.reiniciar()}reiniciar(){this.estado=ya,this.tInicio=0,this.tUltimoActivo=0,this.tQuieto=null,this.tInactivo=null}emitir(a,e){return e-a>=this.p.min_ms?[a,e]:null}procesar(a,e,t){let s=this.p;if(this.estado===ya)return e&&(this.estado=le,this.tInicio=a),null;if(this.estado===le)return e?(a-this.tInicio>=s.inicio_ms&&(this.estado=ka,this.tUltimoActivo=a,this.tQuieto=null),null):(this.estado=ya,null);if(this.estado===ka){if(e){if(this.tUltimoActivo=a,s.usar_quietud&&t<s.umbral_velocidad){if(this.tQuieto===null)this.tQuieto=a;else if(a-this.tQuieto>=s.quietud_ms&&a-this.tInicio>=s.min_ms){let r=this.emitir(this.tInicio,a);return this.estado=ko,this.tInactivo=null,r}}else this.tQuieto=null;if(a-this.tInicio>=s.max_ms){let r=this.emitir(this.tInicio,a);return this.tInicio=a,this.tQuieto=null,r}return null}return a-this.tUltimoActivo>=s.fin_ms?(this.estado=ya,this.emitir(this.tInicio,this.tUltimoActivo)):null}return e?(this.tInactivo=null,t>=s.umbral_velocidad&&(this.estado=le,this.tInicio=a)):this.tInactivo===null?this.tInactivo=a:a-this.tInactivo>=s.fin_ms&&(this.estado=ya),null}cerrar(){let a=this.estado===ka?this.emitir(this.tInicio,this.tUltimoActivo):null;return this.reiniciar(),a}};var Ha=class{constructor(a,e=60){this.p=a||Ve(),this.seg=new pe(this.p),this.margenMs=e,this.buffer=[],this.anterior=null,this.tAnt=null,this.activo=!1}reiniciar(){this.seg.reiniciar(),this.buffer=[],this.anterior=null,this.tAnt=null}get enSena(){return this.seg.estado===ka}agregar(a,e){let t=this.tAnt!==null?(e-this.tAnt)/1e3:0,[s,r]=Ho(a,this.anterior,t,this.p);this.activo=s,this.buffer.push({t:e,c:a});let c=e-this.p.max_ms-1500;for(;this.buffer.length>2&&this.buffer[0].t<c;)this.buffer.shift();let n=this.seg.procesar(e,s,r);if(this.anterior=a,this.tAnt=e,!n)return null;let[p,g]=n,f=this.buffer.filter(h=>h.t>=p-this.margenMs&&h.t<=g+this.margenMs);return f.length<4?null:{cuadros:f.map(h=>h.c),tiempos:f.map(h=>h.t),inicioMs:p,finMs:g}}};var xa=j,la=3+oa*3,sa=la*2,Go=.5;function de(o,a,e,t){let s=o[a+e*3]-o[a+t*3],r=o[a+e*3+1]-o[a+t*3+1];return Math.sqrt(s*s+r*r)}function ue(o,a=o.length/xa){let e=[],t=[],s=[],r=[];for(let m=0;m<a;m++){let d=m*xa,l=o.subarray(d,d+xa);if(S(l,L)&&S(l,z)){let A=de(o,d,L,z);A>1e-4&&(e.push(A),t.push((o[d+L*3]+o[d+z*3])/2),s.push((o[d+L*3+1]+o[d+z*3+1])/2))}for(let A of[q,ca])S(l,A+G)&&S(l,A+ia)&&r.push(de(o,d,A+G,A+ia))}let c=m=>{if(!m.length)return 0;let d=m.slice().sort((A,v)=>A-v),l=d.length>>1;return d.length%2?d[l]:(d[l-1]+d[l])/2},n=e.length>0,p=n?c(e):1,g=n?c(t):0,f=n?c(s):0,h=c(r),E=new Float32Array(a*sa);for(let m=0;m<a;m++){let d=m*xa;[q,ca].forEach((l,A)=>{let v=d+(l+G)*3,O=o.subarray(d,d+xa);if(!S(O,l+G))return;let I=m*sa+A*la;E[I]=1,n&&(E[I+1]=(o[v]-g)/p,E[I+2]=(o[v+1]-f)/p);let b=de(o,d,l+G,l+ia);b<h*.5&&(b=h),b<1e-5&&(b=1e-5);for(let x=0;x<oa;x++){let y=d+(l+x)*3;E[I+3+x*3]=(o[y]-o[v])/b,E[I+3+x*3+1]=(o[y+1]-o[v+1])/b,E[I+3+x*3+2]=(o[y+2]-o[v+2])/b*Go}})}return E}function He(o){let a=o.length/sa,e=new Float32Array(o.length);for(let t=0;t<a;t++)for(let s=0;s<2;s++){let r=t*sa+s*la,c=t*sa+(1-s)*la;e[c]=o[r],e[c+1]=-o[r+1],e[c+2]=o[r+2];for(let n=0;n<oa;n++)e[c+3+n*3]=-o[r+3+n*3],e[c+3+n*3+1]=o[r+3+n*3+1],e[c+3+n*3+2]=o[r+3+n*3+2]}return e}function Ge(o,a,e,t,s){let r=0;for(let c=0;c<2;c++){let n=a*sa+c*la,p=t*sa+c*la,g=o[n]>0,f=e[p]>0;if(!g&&!f)continue;if(g!==f){r+=s.ausente;continue}let h=o[n+1]-e[p+1],E=o[n+2]-e[p+2],m=0;for(let d=3;d<la;d++){let l=o[n+d]-e[p+d];m+=l*l}r+=s.posicion*(h*h+E*E)+s.forma*(m/oa)}return r}var me={banda:5,pesos:{posicion:1,forma:2.5,ausente:1.2},vecinos:2,aceptarEspejo:!0,radioMinimo:.1,radioPorDefecto:.22,factorDesconocida:2.4,temperatura:.45,minEjemplos:1},$=ta;function $e(o,a,e=me,t=1/0){let s=e.banda,r=1/0,c=new Float64Array($+1).fill(r),n=new Int32Array($+1),p=new Float64Array($+1).fill(r),g=new Int32Array($+1);c[0]=0;let f=t===1/0?1/0:t*t;for(let h=1;h<=$;h++){p.fill(r);let E=Math.max(1,h-s),m=Math.min($,h+s),d=r;for(let l=E;l<=m;l++){let A=Ge(o,h-1,a,l-1,e.pesos),v=c[l-1],O=n[l-1];c[l]<v&&(v=c[l],O=n[l]),p[l-1]<v&&(v=p[l-1],O=g[l-1]),p[l]=v+A,g[l]=O+1;let I=p[l]/g[l];I<d&&(d=I)}if(f!==1/0&&h>$/2&&d*(h/$)>f*1.5)return 1/0;[c,p]=[p,c],[n,g]=[g,n]}return Math.sqrt(c[$]/n[$])}var Qe=o=>{let a=o.slice().sort((e,t)=>e-t);return a.length?a[a.length>>1]:0},Sa=class{constructor(a={}){this.op={...me,...a,pesos:{...me.pesos,...a.pesos||{}}},this.clases=new Map}get glosas(){return[...this.clases.keys()]}get total(){let a=0;for(let e of this.clases.values())a+=e.ejemplos.length;return a}cantidad(a){var e;return((e=this.clases.get(a))==null?void 0:e.ejemplos.length)||0}fijar(a){this.clases.clear();for(let e of a)this.clases.has(e.glosa)||this.clases.set(e.glosa,{ejemplos:[],radio:this.op.radioPorDefecto}),this.clases.get(e.glosa).ejemplos.push(ue(e.sec));this.calibrar()}calibrar(){let a=[];for(let t of this.clases.values()){if(t.ejemplos.length<2){t.radio=null;continue}let s=t.ejemplos.map((r,c)=>{let n=1/0;return t.ejemplos.forEach((p,g)=>{c!==g&&(n=Math.min(n,$e(r,p,this.op)))}),n});t.radio=Math.max(this.op.radioMinimo,Qe(s)),a.push(t.radio)}let e=a.length?Qe(a):this.op.radioPorDefecto;for(let t of this.clases.values())t.radio===null?t.radio=Math.max(e,this.op.radioPorDefecto):t.ejemplos.length===2&&a.length>2&&(t.radio=Math.min(t.radio,e*1.25));this.radioTipico=e}clasificar(a){if(this.clases.size===0)return{candidatas:[],ninguna:1,espejo:!1};let e=ue(a),t=this.puntuar(e),s=t,r=!1;if(this.op.aceptarEspejo){let h=this.puntuar(He(e));h[0].relativa<t[0].relativa*.8&&(s=h,r=!0)}let c=this.op.temperatura,n=s.map(h=>Math.exp(-h.relativa/c)),p=Math.exp(-this.op.factorDesconocida/c),g=n.reduce((h,E)=>h+E,0)+p;return{candidatas:s.map((h,E)=>({glosa:h.glosa,prob:n[E]/g,distancia:h.d})).slice(0,5),ninguna:p/g,espejo:r}}puntuar(a){let e=[];for(let[t,s]of this.clases){if(s.ejemplos.length<this.op.minEjemplos)continue;let r=s.ejemplos.map(p=>$e(a,p,this.op)).sort((p,g)=>p-g),c=Math.min(this.op.vecinos,r.length),n=0;for(let p=0;p<c;p++)n+=r[p];n/=c,e.push({glosa:t,d:n,relativa:n/s.radio})}return e.sort((t,s)=>t.relativa-s.relativa)}};function Xe(o){let a=new Uint8Array(o.buffer,o.byteOffset,o.byteLength),e="",t=32768;for(let s=0;s<a.length;s+=t)e+=String.fromCharCode.apply(null,a.subarray(s,s+t));return btoa(e)}function Ze(o){let a=atob(o),e=new Uint8Array(a.length);for(let t=0;t<a.length;t++)e[t]=a.charCodeAt(t);if(e.length%4!==0)throw new Error("Datos de puntos clave da\xF1ados");return new Float32Array(e.buffer)}var Je="senas-rd/paquete",$o=ta*j;function We(o,a=[],e={}){return{tipo:Je,version:1,formato:ce,longitud:ta,creado:e.creado||new Date().toISOString(),autor:e.autor||"",consentimiento_entrenamiento:!!e.consentimiento,nota:"Solo puntos clave del cuerpo y las manos. No contiene video ni audio.",propias:a.map(t=>({glosa:t.glosa,espanol:t.espanol})),ejemplos:o.map(t=>({id:t.id,glosa:t.glosa,espanol:t.espanol||"",creado:t.creado||"",duracion_ms:Math.round(t.duracionMs||0),sec_b64:Xe(t.sec)}))}}function Ye(o){let a=[];if(!o||o.tipo!==Je)throw new Error("El archivo no es un paquete de se\xF1as de Se\xF1as RD.");if(o.formato!==ce)throw new Error(`El paquete usa otro formato de puntos clave (${o.formato}).`);let e=r=>typeof r=="string"&&/^[A-ZÑ0-9][A-ZÑ0-9_-]{0,59}$/.test(r),t=(Array.isArray(o.propias)?o.propias:[]).filter(r=>r&&e(r.glosa)&&typeof r.espanol=="string"&&r.espanol.trim()).map(r=>({glosa:r.glosa,espanol:r.espanol.trim().slice(0,80)})),s=[];for(let r of Array.isArray(o.ejemplos)?o.ejemplos.slice(0,5e3):[])try{if(!e(r.glosa))throw new Error("glosa inv\xE1lida");let c=Ze(String(r.sec_b64));if(c.length!==$o)throw new Error("tama\xF1o incorrecto");for(let n=0;n<c.length;n++)if(!Number.isFinite(c[n])||Math.abs(c[n])>50)throw new Error("valores fuera de rango");s.push({id:typeof r.id=="string"&&/^[\w-]{4,64}$/.test(r.id)?r.id:null,glosa:r.glosa,espanol:typeof r.espanol=="string"?r.espanol.slice(0,80):"",sec:c,creado:typeof r.creado=="string"?r.creado.slice(0,40):"",duracionMs:Number(r.duracion_ms)||0})}catch(c){a.push(`${r&&r.glosa?r.glosa:"ejemplo"}: ${c.message}`)}return{ejemplos:s,propias:t,errores:a,autor:typeof o.autor=="string"?o.autor.slice(0,80):""}}var Xo="senas-rd",$a="ejemplos";var Ke="senas-rd.ajustes",fe="senas-rd.propias",ao={camaraFrontal:!0,vozActiva:!0,decirSola:!0,velocidadVoz:1,voz:"",pausaFraseMs:1800,sensibilidad:"normal",detectorPreciso:!1,velocidadAvatar:1,otraMano:!0,autor:"",avisoVisto:!1};function Zo(){return new Promise((o,a)=>{if(typeof indexedDB>"u"){a(new Error("sin IndexedDB"));return}let e=indexedDB.open(Xo,1);e.onupgradeneeded=()=>{e.result.objectStoreNames.contains($a)||e.result.createObjectStore($a,{keyPath:"id"})},e.onsuccess=()=>o(e.result),e.onerror=()=>a(e.error),e.onblocked=()=>a(new Error("base de datos bloqueada"))})}function Ga(o,a,e){return new Promise((t,s)=>{let r=o.transaction($a,a),c=e(r.objectStore($a));r.oncomplete=()=>t(c&&c.result),r.onerror=()=>s(r.error),r.onabort=()=>s(r.error)})}var Qa=class{constructor(){this.bd=null,this.memoria=new Map,this.persistente=!1}async abrir(){try{this.bd=await Zo(),this.persistente=!0}catch{this.bd=null,this.persistente=!1}try{this.persistente&&navigator.storage&&navigator.storage.persist&&navigator.storage.persist().catch(()=>{})}catch{}return this.persistente}async ejemplos(){if(!this.bd)return[...this.memoria.values()];try{return(await Ga(this.bd,"readonly",e=>e.getAll())||[]).map(e=>({...e,sec:e.sec instanceof Float32Array?e.sec:new Float32Array(e.sec)}))}catch{return[...this.memoria.values()]}}async guardar(a){if(this.memoria.set(a.id,a),!this.bd)return!1;try{return await Ga(this.bd,"readwrite",e=>e.put(a)),!0}catch{return!1}}async borrar(a){if(this.memoria.delete(a),!!this.bd)try{await Ga(this.bd,"readwrite",e=>e.delete(a))}catch{}}async borrarTodo(){if(this.memoria.clear(),this.bd)try{await Ga(this.bd,"readwrite",a=>a.clear())}catch{}try{localStorage.removeItem(fe)}catch{}}leerAjustes(){try{return{...ao,...JSON.parse(localStorage.getItem(Ke)||"{}")}}catch{return{...ao}}}guardarAjustes(a){try{localStorage.setItem(Ke,JSON.stringify(a))}catch{}}leerPropias(){try{let a=JSON.parse(localStorage.getItem(fe)||"[]");return Array.isArray(a)?a.filter(e=>e&&e.glosa&&e.espanol):[]}catch{return[]}}guardarPropias(a){try{localStorage.setItem(fe,JSON.stringify(a))}catch{}}};var T=3,Da=5,eo={estricta:2.1,normal:2.4,tolerante:2.8},u={almacen:new Qa,ajustes:null,vocab:null,frases:ie(Pe),emergencias:ie(Le),ejemplos:[],propias:[],reconocedor:new Sa({minEjemplos:T}),oyentes:new Set},he=()=>u.oyentes.forEach(o=>{try{o()}catch{}}),oo=()=>"ej-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);function ge(){u.vocab=new Pa(Ia(Fe),Ia(je),u.propias)}function pa(){u.reconocedor=new Sa({minEjemplos:T,aceptarEspejo:u.ajustes.otraMano,factorDesconocida:eo[u.ajustes.sensibilidad]||eo.normal}),u.reconocedor.fijar(u.ejemplos),he()}async function to(){await u.almacen.abrir(),u.ajustes=u.almacen.leerAjustes(),u.propias=u.almacen.leerPropias(),ge(),u.ejemplos=(await u.almacen.ejemplos()).filter(o=>o&&o.glosa&&o.sec&&o.sec.length);for(let o of u.ejemplos)!u.vocab.existe(o.glosa)&&o.espanol&&Ma(o.espanol,o.glosa,!1);pa()}function va(o){Object.assign(u.ajustes,o),u.almacen.guardarAjustes(u.ajustes),"otraMano"in o||"sensibilidad"in o?pa():he()}var Z=o=>u.ejemplos.reduce((a,e)=>a+(e.glosa===o?1:0),0),Xa=o=>u.ejemplos.filter(a=>a.glosa===o);var J=()=>{let o=new Map;for(let a of u.ejemplos)o.set(a.glosa,(o.get(a.glosa)||0)+1);return[...o.values()].filter(a=>a>=T).length},so=()=>new Set(u.ejemplos.map(o=>o.glosa)).size;function ra(o){let a=Xa(o);return a.length?a[a.length-1]:null}async function ro(o,a,e){let t={id:oo(),glosa:o,espanol:u.vocab.espanolDe(o),sec:a,creado:new Date().toISOString(),duracionMs:e};u.ejemplos.push(t);let s=await u.almacen.guardar(t);return pa(),{ejemplo:t,guardado:s}}async function no(o){u.ejemplos=u.ejemplos.filter(a=>a.id!==o),await u.almacen.borrar(o),pa()}async function io(o){for(let e of Xa(o))await u.almacen.borrar(e.id);u.ejemplos=u.ejemplos.filter(e=>e.glosa!==o);let a=u.propias.length;u.propias=u.propias.filter(e=>e.glosa!==o),u.propias.length!==a&&(u.almacen.guardarPropias(u.propias),ge()),pa()}function Ma(o,a,e=!0){let t=u.vocab.agregarPropia(o,a);return t&&t.propia&&!u.propias.some(s=>s.glosa===t.glosa)&&(u.propias.push({glosa:t.glosa,espanol:t.espanol}),u.almacen.guardarPropias(u.propias)),e&&he(),t}function co(o){return We(u.ejemplos,u.propias,{autor:u.ajustes.autor,consentimiento:o})}async function lo(o){let a=Ye(o);for(let s of a.propias)Ma(s.espanol,s.glosa,!1);let e=new Set(u.ejemplos.map(s=>s.id)),t=0;for(let s of a.ejemplos){if(!u.vocab.existe(s.glosa))if(s.espanol)Ma(s.espanol,s.glosa,!1);else continue;if(!u.vocab.existe(s.glosa))continue;if(!s.id||e.has(s.id)){if(s.id&&e.has(s.id))continue;s.id=oo()}e.add(s.id);let r={id:s.id,glosa:s.glosa,espanol:u.vocab.espanolDe(s.glosa),sec:s.sec,creado:s.creado||new Date().toISOString(),duracionMs:s.duracionMs||1e3};u.ejemplos.push(r),await u.almacen.guardar(r),t++}return pa(),{nuevos:t,errores:a.errores,autor:a.autor}}async function po(){await u.almacen.borrarTodo(),u.ejemplos=[],u.propias=[],ge(),pa()}var da=null,uo=!1,Ee=new Set,Ae=()=>Ee.forEach(o=>o()),Jo=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1,Wo=()=>window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===!0;function mo(){let o=location.protocol==="https:"||location.hostname==="localhost"||location.hostname==="127.0.0.1";"serviceWorker"in navigator&&o&&window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})}),window.addEventListener("beforeinstallprompt",a=>{a.preventDefault(),da=a,Ae()}),window.addEventListener("appinstalled",()=>{uo=!0,da=null,Ae()})}var Za=()=>({puedePedir:!!da,instalada:uo||Wo(),ios:Jo()}),fo=o=>(Ee.add(o),()=>Ee.delete(o));async function Ja(){if(!da)return!1;da.prompt();try{await da.userChoice}catch{}return da=null,Ae(),!0}function ho(o,a){let e=J(),t=so(),s=i("div"),r=()=>{let n=Za();if(n.instalada){N(s);return}n.puedePedir?N(s,i("div",{class:"tarjeta fila-entre"},i("p",{text:"Instale la app para abrirla desde la pantalla de inicio, tambi\xE9n sin conexi\xF3n."}),_("Instalar",Ja,"primario chico"))):N(s,i("p",{class:"nota",text:n.ios?"Para instalarla en iPhone: bot\xF3n Compartir \u2192 \xABAgregar a inicio\xBB.":"Para instalarla: men\xFA \u22EE del navegador \u2192 \xABInstalar app\xBB o \xABAgregar a pantalla de inicio\xBB."}))};r();let c=fo(r);return N(o,i("main",{class:"inicio"},i("div",{class:"marca"},i("div",{class:"logo","aria-hidden":"true"},"\u{1F91F}"),i("div",null,i("h1",{text:"Se\xF1as RD"}),i("p",{text:"Lengua de Se\xF1as Dominicana \u2194 espa\xF1ol"}))),i("div",{class:"tarjeta estado"+(e?"":" vacia")},e?[i("strong",{text:`${e} ${e===1?"se\xF1a lista":"se\xF1as listas"} para reconocer`}),t>e?i("span",{text:`${t-e} m\xE1s a medio ense\xF1ar`}):null]:[i("strong",{text:"Todav\xEDa no reconoce ninguna se\xF1a"}),i("span",{text:"Ens\xE9\xF1ele las suyas: tres ejemplos de cada una bastan para empezar."})]),_(i("span",null,"Conversaci\xF3n",i("small",{text:"Se\xF1as a voz y voz a se\xF1as"})),()=>a("conversacion"),"primario grande"),_(i("span",null,"Emergencia",i("small",{text:"Frases urgentes, sin conexi\xF3n"})),()=>a("emergencia"),"peligro grande"),i("div",{class:"rejilla"},_("Ense\xF1ar se\xF1as",()=>a("ensenar"),"suave alto"),_("Diccionario",()=>a("diccionario"),"suave alto"),_("Ajustes",()=>a("ajustes"),"suave alto")),s,i("p",{class:"nota",text:"Esta herramienta apoya la comunicaci\xF3n cotidiana. No reemplaza a un int\xE9rprete de LSRD, sobre todo en tr\xE1mites legales, m\xE9dicos o judiciales."}))),c}var Yo=.5;function ve(o,a,e,t,s,r){o[a*3]=e*r,o[a*3+1]=t,o[a*3+2]=s*r}function go(o,a,e,t,s,r){let c=r||new Float32Array(j);c.fill(0),o&&o.length>=33&&Ue.forEach((p,g)=>{let f=o[p],h=f.visibility;(h==null||Number.isNaN(h)||h>=Yo)&&ve(c,qe+g,f.x,f.y,f.z||0,s)});let n=(p,g)=>{if(!(!g||g.length<oa))for(let f=0;f<oa;f++)ve(c,p+f,g[f].x,g[f].y,g[f].z||0,s)};return n(q,a),n(ca,e),t&&t.length>=468&&Be.forEach((p,g)=>ve(c,Na+g,t[p].x,t[p].y,t[p].z||0,s)),c}var Eo="mediapipe/",Wa=null;function Ko(){return window.Holistic?Promise.resolve():(Wa||(Wa=new Promise((o,a)=>{let e=document.createElement("script");e.src=Eo+"holistic.js",e.onload=()=>o(),e.onerror=()=>{Wa=null,a(new Error("No se pudo cargar el detector. Revise la conexi\xF3n la primera vez que abre la c\xE1mara."))},document.head.appendChild(e)})),Wa)}function Ao(o){let a=o&&o.name;return a==="NotAllowedError"||a==="SecurityError"?"La app no tiene permiso para usar la c\xE1mara. Act\xEDvelo en los ajustes del navegador y vuelva a entrar.":a==="NotFoundError"||a==="OverconstrainedError"?"No se encontr\xF3 una c\xE1mara en este dispositivo.":a==="NotReadableError"?"Otra aplicaci\xF3n est\xE1 usando la c\xE1mara. Ci\xE9rrela y vuelva a intentar.":o&&o.message||"No se pudo abrir la c\xE1mara."}var Ya=class{constructor(a,{alCuadro:e,alEstado:t}={}){this.video=a,this.alCuadro=e||(()=>{}),this.alEstado=t||(()=>{}),this.activo=!1,this.ocupado=!1,this.aspecto=4/3,this.frontal=!0,this.cuadros=0}get simulado(){return!!window.__senasSimulacion}async iniciar({frontal:a=!0,preciso:e=!1}={}){this.detener(),this.activo=!0,this.frontal=a;let t=this.turno=(this.turno||0)+1;if(this.simulado){this.iniciarSimulacion(t);return}if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error("Este navegador no permite usar la c\xE1mara. Abra la app en Chrome o Safari, por https.");this.alEstado("Abriendo la c\xE1mara\u2026");let s=await navigator.mediaDevices.getUserMedia({audio:!1,video:{facingMode:a?"user":"environment",width:{ideal:640},height:{ideal:480},frameRate:{ideal:30}}});if(!this.activo||t!==this.turno){s.getTracks().forEach(c=>c.stop());return}if(this.flujo=s,this.video.srcObject=s,this.video.muted=!0,this.video.playsInline=!0,await this.video.play().catch(()=>{}),this.alEstado("Preparando el detector\u2026 (la primera vez tarda m\xE1s)"),await Ko(),!this.activo||t!==this.turno)return;if(!this.holistico||this.preciso!==e){if(this.holistico)try{await this.holistico.close()}catch{}this.holistico=new window.Holistic({locateFile:c=>Eo+c}),this.holistico.setOptions({modelComplexity:e?1:0,smoothLandmarks:!0,enableSegmentation:!1,refineFaceLandmarks:!1,minDetectionConfidence:.5,minTrackingConfidence:.5,selfieMode:!1}),this.preciso=e}this.holistico.onResults(c=>this.recibir(c)),this.primerResultado=!1;let r=async()=>{if(!(!this.activo||t!==this.turno)){if(!this.ocupado&&this.video.readyState>=2&&this.video.videoWidth>0){this.ocupado=!0,this.aspecto=this.video.videoWidth/this.video.videoHeight,this.tCuadro=performance.now();try{await this.holistico.send({image:this.video})}catch(c){this.activo&&this.alEstado("El detector fall\xF3: "+(c&&c.message?c.message:c))}this.ocupado=!1}this.rafId=requestAnimationFrame(r)}};this.rafId=requestAnimationFrame(r)}recibir(a){if(!this.activo)return;this.primerResultado||(this.primerResultado=!0,this.alEstado(""));let e=go(a.poseLandmarks,a.leftHandLandmarks,a.rightHandLandmarks,a.faceLandmarks,this.aspecto);this.cuadros++,this.alCuadro(e,this.tCuadro,{aspecto:this.aspecto,manos:(a.leftHandLandmarks?1:0)+(a.rightHandLandmarks?1:0),cuerpo:!!a.poseLandmarks})}iniciarSimulacion(a){let e=window.__senasSimulacion;this.aspecto=e.aspecto||4/3,this.alEstado(""),this.temporizador=setInterval(()=>{if(!this.activo||a!==this.turno)return;let t=e.siguiente();if(!t)return;let s=0;for(let r of[7,28])Math.abs(t.cuadro[r*3])+Math.abs(t.cuadro[r*3+1])>0&&s++;this.cuadros++,this.alCuadro(t.cuadro.length===j?t.cuadro:new Float32Array(j),t.t,{aspecto:this.aspecto,manos:s,cuerpo:!0})},16)}detener(){if(this.activo=!1,this.rafId&&cancelAnimationFrame(this.rafId),this.temporizador&&clearInterval(this.temporizador),this.rafId=this.temporizador=null,this.flujo&&(this.flujo.getTracks().forEach(a=>a.stop()),this.flujo=null),this.video)try{this.video.srcObject=null}catch{}}};var W=j,at=Ba.filter(([o])=>o>=q),et=Ba.filter(([o])=>o<q);function _o(o){let a=o.getBoundingClientRect(),e=Math.min(2,window.devicePixelRatio||1),t=Math.max(1,Math.round(a.width*e)),s=Math.max(1,Math.round(a.height*e));return(o.width!==t||o.height!==s)&&(o.width=t,o.height=s),{w:t,h:s,dpr:e}}function Oo(o,a,e,t,s="#2DD4BF"){let{w:r,h:c,dpr:n}=_o(o),p=o.getContext("2d");if(p.clearRect(0,0,r,c),!a)return;let g=Math.max(r/e,c),f=(r-g*e)/2,h=(c-g)/2,E=d=>{let l=f+a[d*3]*g;return t?r-l:l},m=d=>h+a[d*3+1]*g;p.lineCap="round",p.strokeStyle=s,p.fillStyle=s,p.lineWidth=3*n;for(let[d,l]of Ba)!S(a,d)||!S(a,l)||(p.globalAlpha=d<q?.45:.95,p.beginPath(),p.moveTo(E(d),m(d)),p.lineTo(E(l),m(l)),p.stroke());p.globalAlpha=1;for(let d=q;d<Na;d++)S(a,d)&&(p.beginPath(),p.arc(E(d),m(d),2.4*n,0,Math.PI*2),p.fill())}function vo(o){let a=o.length/W,e=1/0,t=1/0,s=-1/0,r=-1/0;for(let p=0;p<a;p++)for(let g=0;g<La;g++){let f=p*W+g*3;Math.abs(o[f])+Math.abs(o[f+1])+Math.abs(o[f+2])!==0&&(o[f]<e&&(e=o[f]),o[f]>s&&(s=o[f]),o[f+1]<t&&(t=o[f+1]),o[f+1]>r&&(r=o[f+1]))}if(!Number.isFinite(e))return{x0:0,y0:0,x1:1,y1:1};let c=(s-e)*.12+.02,n=(r-t)*.1+.02;return{x0:e-c,y0:t-n*2.2,x1:s+c,y1:r+n}}function bo(o,a,e,t={}){let{w:s,h:r,dpr:c}=_o(o),n=o.getContext("2d");if(n.clearRect(0,0,s,r),!a)return;let p={cuerpo:"#9FB0C7",mano:"#2DD4BF",cabeza:"#C9D4E3",...t},g=e.x1-e.x0,f=e.y1-e.y0,h=Math.min(s/g,r/f),E=(s-g*h)/2,m=(r-f*h)/2,d=b=>E+(a[b*3]-e.x0)*h,l=b=>m+(a[b*3+1]-e.y0)*h,A=b=>S(a,b);n.lineCap="round",n.lineJoin="round";let v=L,O=z,I=0;A(v)&&A(O)&&(I=Math.hypot(d(v)-d(O),l(v)-l(O)),n.fillStyle="rgba(159,176,199,0.16)",n.beginPath(),n.moveTo(d(v),l(v)),n.lineTo(d(O),l(O)),n.lineTo(d(O)+(d(v)-d(O))*.12,l(O)+I*1.25),n.lineTo(d(v)-(d(v)-d(O))*.12,l(v)+I*1.25),n.closePath(),n.fill()),n.strokeStyle=p.cuerpo,n.lineWidth=Math.max(4*c,I*.07);for(let[b,x]of et)!A(b)||!A(x)||(n.beginPath(),n.moveTo(d(b),l(b)),n.lineTo(d(x),l(x)),n.stroke());if(A(za)){let b=I>0?I*.3:26*c;n.fillStyle="rgba(201,212,227,0.14)",n.strokeStyle=p.cabeza,n.lineWidth=2.5*c,n.beginPath(),n.arc(d(za),l(za)-b*.1,b,0,Math.PI*2),n.fill(),n.stroke();let x=D=>Na+D;n.lineWidth=2*c;let y=D=>{D.every(k=>A(x(k)))&&(n.beginPath(),D.forEach((k,ha)=>ha?n.lineTo(d(x(k)),l(x(k))):n.moveTo(d(x(k)),l(x(k)))),n.stroke())};y([0,2,1]),y([0,3,1]),y([8,9,10,11,12]),y([13,14,15,16,17])}n.strokeStyle=p.mano,n.fillStyle=p.mano,n.lineWidth=Math.max(3*c,I*.035);for(let[b,x]of at)!A(b)||!A(x)||(n.beginPath(),n.moveTo(d(b),l(b)),n.lineTo(d(x),l(x)),n.stroke())}var na=class{constructor(a){this.lienzo=a,this.velocidad=1,this.id=0}detener(){this.id++,this.raf&&cancelAnimationFrame(this.raf),this.raf=null}limpiar(){this.detener(),this.lienzo.getContext("2d").clearRect(0,0,this.lienzo.width,this.lienzo.height)}reproducir(a,e=1200){this.detener();let t=this.id,s=a.length/W,r=vo(a),c=Math.min(4e3,Math.max(700,e))/Math.max(.4,this.velocidad),n=new Float32Array(W);return new Promise(p=>{let g=performance.now(),f=h=>{if(t!==this.id){p(!1);return}let E=Math.min(1,(h-g)/c),m=E*(s-1),d=Math.min(s-2,Math.floor(m)),l=m-d,A=a.subarray(d*W,(d+1)*W),v=a.subarray((d+1)*W,(d+2)*W);for(let O=0;O<La;O++){let I=O*3,b=S(A,O),x=S(v,O);for(let y=0;y<3;y++)n[I+y]=b&&x?A[I+y]+(v[I+y]-A[I+y])*l:b?A[I+y]:x&&l>.5?v[I+y]:0}if(bo(this.lienzo,n,r),E>=1){p(!0);return}this.raf=requestAnimationFrame(f)};this.raf=requestAnimationFrame(f)})}posar(a){this.detener(),bo(this.lienzo,a.subarray(0,W),vo(a))}};function Ka({alSena:o,alCuadro:a}){let e=i("video",{playsinline:!0,muted:!0,autoplay:!0,"aria-label":"C\xE1mara"}),t=i("canvas",{class:"esqueleto"}),s=i("div",{class:"estado-camara"}),r=i("div",{class:"chip-camara",text:"Iniciando\u2026"}),c=i("button",{type:"button",class:"girar","aria-label":"Cambiar de c\xE1mara",title:"Cambiar de c\xE1mara"},"\u27F2"),n=i("div",{class:"camara"},e,t,r,c,s),p=new Ha,g=!1,f="",h=(l,A)=>{let v=l+A;v!==f&&(f=v,r.textContent=l,r.className="chip-camara "+A)},E=new Ya(e,{alEstado:l=>{s.textContent=l,s.classList.toggle("visible",!!l)},alCuadro:(l,A,v)=>{if(Oo(t,l,v.aspecto,u.ajustes.camaraFrontal&&!E.simulado),g){h("En pausa","");return}let O=p.agregar(l,A),I=p.enSena;!v.cuerpo&&v.manos===0?h("No veo a nadie","alerta"):I?h("Firmando\u2026","activo"):v.manos===0?h("Manos abajo",""):h("Manos a la vista",""),O&&o&&o(O),a&&a({manos:v.manos,enSena:I,t:A})}});async function m(){e.classList.toggle("espejo",u.ajustes.camaraFrontal);try{await E.iniciar({frontal:u.ajustes.camaraFrontal,preciso:u.ajustes.detectorPreciso})}catch(l){s.textContent=Ao(l),s.classList.add("visible","error"),h("Sin c\xE1mara","alerta")}}c.addEventListener("click",()=>{va({camaraFrontal:!u.ajustes.camaraFrontal}),p.reiniciar(),m()});let d=()=>{document.visibilityState==="visible"&&n.isConnected&&!E.flujo&&!E.simulado?m():document.visibilityState==="hidden"&&E.detener()};return document.addEventListener("visibilitychange",d),{nodo:n,iniciar:m,pausar(l){g=l,l&&p.reiniciar()},reiniciar(){p.reiniciar()},detener(){document.removeEventListener("visibilitychange",d),E.detener()}}}var ae=class{constructor(){this.umbralConfianza=.6,this.umbralMinimo=.35,this.fusionRepetidaMs=500,this.maxSenas=30,this.senas=[]}agregar(a,e,t){let s=a.candidatas[0];if(!s||s.prob<this.umbralMinimo)return null;let r=this.senas[this.senas.length-1];if(r&&r.glosa===s.glosa&&e-r.finMs<this.fusionRepetidaMs)return r.finMs=t,r.prob=Math.max(r.prob,s.prob),r.dudosa=r.prob<this.umbralConfianza,r;let c={glosa:s.glosa,prob:s.prob,dudosa:s.prob<this.umbralConfianza,inicioMs:e,finMs:t,alternativas:a.candidatas.slice(1,4).filter(n=>n.prob>=.03).map(n=>({glosa:n.glosa,prob:n.prob}))};return this.senas.push(c),this.senas.length>this.maxSenas&&this.senas.shift(),c}corregir(a,e){let t=this.senas[a];t&&(t.alternativas=t.alternativas.filter(s=>s.glosa!==e).concat([{glosa:t.glosa,prob:t.prob}]),t.glosa=e,t.prob=1,t.dudosa=!1,t.corregida=!0)}quitar(a){this.senas.splice(a,1)}deshacer(){this.senas.pop()}limpiar(){this.senas=[]}get glosas(){return this.senas.map(a=>a.glosa)}get vacia(){return this.senas.length===0}get tieneDudas(){return this.senas.some(a=>a.dudosa)}get confianzaMedia(){return this.senas.length?this.senas.reduce((a,e)=>a+e.prob,0)/this.senas.length:0}get finMs(){return this.senas.length?this.senas[this.senas.length-1].finMs:0}};function ot(o,a=ta){if(o<=0)throw new Error("La secuencia est\xE1 vac\xEDa");let e=new Array(a);for(let t=0;t<a;t++)e[t]=Math.min(o-1,Math.floor((t+.5)*o/a));return e}function ee(o,a=ta){let e=ot(o.length,a),t=new Float32Array(a*j);for(let s=0;s<a;s++)t.set(o[e[s]],s*j);return t}var ua=typeof window<"u"?window.speechSynthesis:null,be=typeof window<"u"?window.SpeechRecognition||window.webkitSpeechRecognition:null,Ca=()=>!!ua&&typeof SpeechSynthesisUtterance<"u",oe=()=>!!be;function _e(){if(!Ca())return[];let o=["es-DO","es-US","es-MX","es-419","es-PR","es-CO","es-ES"],a=e=>{let t=o.indexOf(e.lang.replace("_","-"));return t<0?o.length:t};return ua.getVoices().filter(e=>/^es([-_]|$)/i.test(e.lang)).sort((e,t)=>a(e)-a(t))}function te(){if(Ca())try{let o=new SpeechSynthesisUtterance(" ");o.volume=0,ua.speak(o)}catch{}}function ba(o,{velocidad:a=1,voz:e=""}={}){if(!Ca()||!o||!o.trim())return!1;try{ua.cancel();let t=new SpeechSynthesisUtterance(o),s=_e(),r=s.find(c=>c.name===e)||s[0];return r?(t.voice=r,t.lang=r.lang):t.lang="es-US",t.rate=Math.min(1.6,Math.max(.6,a)),ua.speak(t),window.__senasUltimaVoz=o,!0}catch{return!1}}function ma(){try{ua&&ua.cancel()}catch{}}function Io({alParcial:o,alFinal:a,alError:e,alTerminar:t}){if(!be)return e&&e("Este navegador no transcribe la voz. Escriba el mensaje."),t&&t(),{detener(){}};let s=new be;s.lang="es-DO",s.continuous=!1,s.interimResults=!0,s.maxAlternatives=1;let r="";s.onresult=c=>{let n="";for(let p=c.resultIndex;p<c.results.length;p++){let g=c.results[p][0].transcript;c.results[p].isFinal?r+=g:n+=g}o&&o((r+" "+n).trim())},s.onerror=c=>{let n={"not-allowed":"La app no tiene permiso para usar el micr\xF3fono.","service-not-allowed":"El reconocimiento de voz est\xE1 desactivado en este tel\xE9fono.",network:"Para transcribir la voz hace falta conexi\xF3n a internet.","no-speech":"No se oy\xF3 nada. Intente de nuevo.","audio-capture":"No se encontr\xF3 un micr\xF3fono."};c.error!=="aborted"&&e&&e(n[c.error]||"No se pudo transcribir la voz.")},s.onend=()=>{r.trim()&&a&&a(r.trim()),t&&t()};try{s.start()}catch{e&&e("No se pudo iniciar el micr\xF3fono."),t&&t()}return{detener(){try{s.stop()}catch{}}}}var Ro=o=>new Promise(a=>setTimeout(a,o));function No(o,a,e){let t=new ae,s=!1,r=-1,c=!1,n=0,p=null,g="",f=R=>u.ajustes.vozActiva&&ba(R,{velocidad:u.ajustes.velocidadVoz,voz:u.ajustes.voz}),h=i("p",{class:"traduccion vacia",text:"Firme frente a la c\xE1mara y baje las manos entre una se\xF1a y otra."}),E=i("div",{class:"chips"}),m=i("div",{class:"opciones",hidden:!0}),d=i("p",{class:"nota-frase"}),l=_("Decir",()=>{s=!0,I(!0)},"primario"),A=_("Deshacer",()=>{t.deshacer(),r=-1,s=!1,b()},"suave"),v=_("Borrar",()=>{t.limpiar(),g="",r=-1,s=!1,ma(),b()},"suave"),O=()=>g||u.vocab.glosasATexto(t.glosas);function I(R){let M=O();M&&!f(M)&&R&&P(u.ajustes.vozActiva?"Este navegador no puede hablar. Muestre el texto.":"La voz est\xE1 apagada en Ajustes.")}function b(){let R=O();h.textContent=R||(J()?"Firme frente a la c\xE1mara y baje las manos entre una se\xF1a y otra.":"Aqu\xED aparece lo que firma la persona sorda."),h.classList.toggle("vacia",!R),N(E,t.senas.map((C,H)=>i("button",{type:"button",class:"chip"+(C.dudosa?" dudosa":"")+(H===r?" abierta":""),"data-glosa":C.glosa,onclick:()=>{r=r===H?-1:H,b()}},u.vocab.espanolDe(C.glosa)+(C.dudosa?" ?":""),i("small",{text:C.corregida?"corregida":Math.round(C.prob*100)+" %"}))));let M=t.senas[r];m.hidden=!M,M&&N(m,i("span",{text:M.alternativas.length?"\xBFEra otra?":"No hay otra se\xF1a parecida."}),M.alternativas.map(C=>_(u.vocab.espanolDe(C.glosa),()=>{t.corregir(r,C.glosa),r=-1,b()},"suave chico")),_("Quitar",()=>{t.quitar(r),r=-1,b()},"suave chico rojo")),d.textContent=t.vacia?"":t.tieneDudas?"Hay se\xF1as dudosas (con \xAB?\xBB). T\xF3quelas para corregirlas antes de decir la frase.":"Traducci\xF3n palabra por palabra de las se\xF1as ense\xF1adas en este tel\xE9fono.";for(let C of[l,A,v])C.disabled=!R;A.disabled=t.vacia}let x=Ka({alSena:R=>{if(c||u.reconocedor.total===0)return;let M=u.reconocedor.clasificar(ee(R.cuadros)),C=M.candidatas[0];if(!C||C.prob<t.umbralMinimo){P("No reconoc\xED esa se\xF1a. Rep\xEDtala o ens\xE9\xF1ela en \xABEnse\xF1ar se\xF1as\xBB.");return}(s||g)&&(t.limpiar(),g="",s=!1,r=-1),t.agregar(M,R.inicioMs,R.finMs),ja(25),b()},alCuadro:({enSena:R,t:M})=>{c||s||t.vacia||R||M-t.finMs<u.ajustes.pausaFraseMs||(s=!0,!t.tieneDudas&&u.ajustes.decirSola&&I(!1),b())}}),y=i("input",{type:"text",class:"campo",placeholder:"Escriba la respuesta\u2026","aria-label":"Respuesta",enterkeyhint:"send",autocomplete:"off",onkeydown:R=>{R.key==="Enter"&&Ie()}}),D=oe()?_("\u{1F3A4}",To,"suave icono",{"aria-label":"Hablar",title:"Hablar"}):null,k=_("Mostrar",Ie,"primario"),ha=i("div",{class:"respuesta",hidden:!0}),Oa=i("div",{class:"velo",hidden:!0}),V=null;function Ie(){let R=y.value.trim();if(!R){y.focus();return}y.value="",y.blur(),se(R)}function To(){if(p){p.detener();return}ma(),D.classList.add("grabando"),y.placeholder="Escuchando\u2026",p=Io({alParcial:R=>{y.value=R},alFinal:R=>{y.value="",se(R)},alError:R=>P(R),alTerminar:()=>{p=null,D.classList.remove("grabando"),y.placeholder="Escriba la respuesta\u2026"}})}async function se(R){let M=u.vocab.textoAGlosas(R),C=++n;c=!0,x.pausar(!0);let H=i("canvas",{class:"lienzo-avatar"}),w=i("div",{class:"tarjeta-palabra",hidden:!0}),Ta=i("p",{class:"rotulo-avatar"}),Ne=i("div",{class:"chips"},M.plan.map((X,Fa)=>i("span",{class:"chip paso"+(Re(X)?"":" sin-clip"),"data-i":Fa,text:X.deletreo?X.palabra:X.espanol}))),ye=M.plan.filter(Re).length;N(ha,i("p",{class:"quien",text:"Para la persona sorda"}),i("p",{class:"frase-respuesta",text:M.texto}),i("div",{class:"marco-avatar"},H,w),Ta,Ne,i("p",{class:"nota",text:M.plan.length===0?"":ye===0?"Ninguna de estas palabras tiene una se\xF1a ense\xF1ada todav\xEDa: se muestran escritas.":ye<M.plan.length?"Las palabras sin se\xF1a ense\xF1ada se muestran escritas.":"Se\xF1as ense\xF1adas en este tel\xE9fono, en el orden de la frase en espa\xF1ol."}),i("div",{class:"fila"},_("Repetir",()=>xe(),"suave"),_("Cerrar",Fo,"primario"))),ha.hidden=!1,V=new na(H);async function xe(){let X=++n;V.velocidad=u.ajustes.velocidadAvatar;let Fa=K=>Ne.querySelectorAll(".paso").forEach(F=>F.classList.toggle("actual",Number(F.dataset.i)===K)),Se=async(K,F)=>{V.limpiar(),w.textContent=K,w.hidden=!1,await Ro(F/V.velocidad),w.hidden=!0};for(let K=0;K<M.plan.length;K++){if(X!==n)return;let F=M.plan[K];if(Fa(K),Ta.textContent=F.deletreo?F.palabra:F.espanol,F.deletreo)if(F.letras.length&&F.letras.every(aa=>ra(aa)))for(let aa of F.letras){if(X!==n)return;let Me=ra(aa);Ta.textContent=`${F.palabra} \xB7 ${u.vocab.espanolDe(aa).toUpperCase()}`,await V.reproducir(Me.sec,Math.min(700,Me.duracionMs))}else await Se(F.palabra,1300);else{let aa=ra(F.glosa);aa?await V.reproducir(aa.sec,aa.duracionMs):await Se(F.espanol,1100)}if(X!==n)return;await Ro(120)}X===n&&(Fa(-1),Ta.textContent="")}C===n&&xe()}let Re=R=>R.deletreo?R.letras.length>0&&R.letras.every(M=>ra(M)):!!ra(R.glosa);function Fo(){n++,V&&V.detener(),ha.hidden=!0,c=!1,x.pausar(!1)}function jo(){let R="oyente_a_sordo",M=i("div",{class:"lista"}),C=i("div",{class:"pestanas"}),H=()=>{N(C,_("Dice quien atiende",()=>{R="oyente_a_sordo",H()},"pestana"+(R==="oyente_a_sordo"?" activa":"")),_("Dice la persona sorda",()=>{R="sordo_a_oyente",H()},"pestana"+(R==="sordo_a_oyente"?" activa":""))),N(M,u.frases.filter(w=>w.rapida&&w.direccion===R).map(w=>i("button",{type:"button",class:"renglon",onclick:()=>{Oa.hidden=!0,w.direccion==="oyente_a_sordo"?se(w.espanol):(t.limpiar(),g=w.espanol,s=!0,r=-1,b(),I(!0))}},w.espanol)))};N(Oa,i("div",{class:"caja alta"},i("h2",{text:"Frases r\xE1pidas"}),C,M,_("Cerrar",()=>{Oa.hidden=!0},"suave"))),H(),Oa.hidden=!1}let Po=J()===0?i("div",{class:"tarjeta fila-entre aviso-fijo"},i("p",{text:"Para traducir se\xF1as, primero ens\xE9\xF1ele las suyas."}),_("Ense\xF1ar",()=>a("ensenar"),"primario chico")):null;return N(o,U("Conversaci\xF3n",e,_("Emergencia",()=>a("emergencia"),"peligro chico")),i("main",{class:"conversacion"},x.nodo,i("section",{class:"panel-sordo"},Po,i("p",{class:"quien",text:"Persona sorda"}),h,E,m,d,i("div",{class:"fila"},l,A,v)),i("section",{class:"panel-oyente"},i("p",{class:"quien",text:"Quien atiende"}),i("div",{class:"fila-campo"},y,D,k),_("Frases r\xE1pidas",jo,"suave"))),ha,Oa),b(),te(),x.iniciar(),()=>{n++,p&&p.detener(),V&&V.detener(),ma(),x.detener()}}function yo(o,a,e){let t="sordo_a_oyente",s=i("div",{class:"lista-emergencia"}),r=i("div",{class:"pestanas"}),c=i("div",{class:"cartel",hidden:!0}),n=f=>ba(f,{velocidad:Math.min(1,u.ajustes.velocidadVoz),voz:u.ajustes.voz});function p(f){let h=f.direccion==="sordo_a_oyente";N(c,i("p",{class:"frase",text:f.espanol}),i("p",{class:"pie",text:h?"Muestre esta pantalla. El tel\xE9fono lo est\xE1 diciendo en voz alta.":"Muestre esta pantalla a la persona sorda."}),i("div",{class:"fila"},_("Cerrar",()=>{ma(),c.hidden=!0},"suave"),h?_("Decir otra vez",()=>n(f.espanol),"peligro"):null)),c.hidden=!1,h&&n(f.espanol)}function g(){N(r,_("Soy una persona sorda",()=>{t="sordo_a_oyente",g()},"pestana"+(t==="sordo_a_oyente"?" activa":"")),_("Atiendo a una persona sorda",()=>{t="oyente_a_sordo",g()},"pestana"+(t==="oyente_a_sordo"?" activa":""))),N(s,u.emergencias.filter(f=>f.direccion===t).map(f=>_(f.espanol,()=>p(f),t==="sordo_a_oyente"?"peligro frase-emergencia":"suave frase-emergencia")))}return N(o,U("Emergencia",e),i("main",{class:"pagina emergencia"},r,s,i("p",{class:"nota",text:"Las frases se muestran y se dicen en espa\xF1ol. En una emergencia m\xE9dica o legal, pida un int\xE9rprete de LSRD."})),c),o.querySelector(".barra").classList.add("roja"),g(),te(),()=>ma()}var tt=80;function xo(o,a,e,t){let s="",r=i("input",{type:"search",class:"campo",placeholder:"Buscar una palabra\u2026","aria-label":"Buscar",autocomplete:"off",oninput:()=>E()}),c=i("select",{class:"campo","aria-label":"Tema",onchange:m=>{s=m.target.value,E()}},i("option",{value:"",text:"Todos los temas"}),u.vocab.categorias.map(m=>i("option",{value:m,text:Ra(m)}))),n=i("p",{class:"nota"}),p=i("div",{class:"lista"}),g=i("div",{class:"ficha",hidden:!0}),f=null;function h(m){let d=ra(m.glosa),l=Z(m.glosa),A=i("canvas",{class:"lienzo-avatar"}),v=m.estado==="validada",O=B(m.espanol),I=m.sinonimos.filter((b,x,y)=>B(b)!==O&&y.findIndex(D=>B(D)===B(b))===x);N(g,U(m.espanol,()=>{f&&f.detener(),g.hidden=!0}),i("main",{class:"pagina"},i("p",{class:"dato",text:`Glosa: ${m.glosa} \xB7 ${Ra(m.categoria)}`}),I.length?i("p",{class:"dato",text:"Tambi\xE9n: "+I.join(", ")}):null,i("p",{class:"etiqueta "+(v?"ok":m.propia?"":"pendiente"),text:m.propia?"Se\xF1a a\xF1adida en este tel\xE9fono.":v?"Validada por la comunidad sorda.":"Propuesta: falta validarla con personas sordas e int\xE9rpretes."}),m.tituloOficial?i("p",{class:"dato"},`En el Diccionario Oficial: \xAB${m.tituloOficial}\xBB. `,m.urlOficial?i("a",{href:m.urlOficial,target:"_blank",rel:"noopener",text:"Abrir la entrada"}):null):m.propia?null:i("p",{class:"dato",text:"No se localiz\xF3 en el \xEDndice del Diccionario Oficial."}),i("div",{class:"marco-avatar"},A,d?null:i("p",{text:"Todav\xEDa no hay una grabaci\xF3n de esta se\xF1a en este tel\xE9fono."})),i("p",{class:"nota",text:d?`As\xED la ense\xF1aron en este tel\xE9fono (${l} ${l===1?"ejemplo":"ejemplos"}${l<T?`; faltan ${T-l} para reconocerla`:""}). No es una referencia oficial.`:""}),i("div",{class:"fila"},d?_("Ver otra vez",()=>f.reproducir(d.sec,d.duracionMs),"suave"):null,_(l?"Ense\xF1ar m\xE1s ejemplos":"Ense\xF1ar esta se\xF1a",()=>a("ensenar/"+encodeURIComponent(m.glosa)),"primario")))),g.hidden=!1,f=new na(A),f.velocidad=u.ajustes.velocidadAvatar,d&&requestAnimationFrame(()=>f.reproducir(d.sec,d.duracionMs))}function E(){let m=u.vocab.consultar(r.value,s||null),d=m.slice(0,tt);n.textContent=m.length===0?"No est\xE1 en el vocabulario. Puede a\xF1adirla en \xABEnse\xF1ar se\xF1as\xBB o deletrearla con el alfabeto manual.":d.length<m.length?`Mostrando ${d.length} de ${m.length}. Escriba para acotar.`:`${m.length} ${m.length===1?"se\xF1a":"se\xF1as"}`,N(p,d.map(l=>i("button",{type:"button",class:"renglon",onclick:()=>h(l)},i("span",{text:l.espanol}),Z(l.glosa)?i("span",{class:"marca-clip",title:"Tiene grabaci\xF3n",text:"\u25B6"}):null)))}return N(o,U("Diccionario",e),i("main",{class:"pagina"},r,c,n,p),g),E(),t&&u.vocab.existe(t)&&h(u.vocab.porGlosa.get(t)),()=>{f&&f.detener()}}var st=120;function So(o,a,e){let t="todas",s="",r=i("input",{type:"search",class:"campo",placeholder:"Buscar una palabra\u2026","aria-label":"Buscar",autocomplete:"off",oninput:()=>h()}),c=i("select",{class:"campo","aria-label":"Tema",onchange:E=>{s=E.target.value,h()}}),n=i("div",{class:"pestanas"}),p=i("p",{class:"nota"}),g=i("div",{class:"lista"});async function f(){let E=i("input",{type:"text",class:"campo",placeholder:"Por ejemplo: un nombre, un lugar\u2026",maxlength:60,"aria-label":"Palabra nueva"});if(!await ga({titulo:"A\xF1adir una palabra",texto:"Escriba la palabra o el nombre en espa\xF1ol. Despu\xE9s le ense\xF1a su se\xF1a.",aceptar:"A\xF1adir",contenido:E}))return;let d=Ma(E.value);if(!d){P("Escriba una palabra.");return}a("ensenar/"+encodeURIComponent(d.glosa))}function h(){N(c,i("option",{value:"",text:"Todos los temas"}),u.vocab.categorias.map(l=>i("option",{value:l,text:Ra(l),selected:l===s}))),N(n,[["todas","Todas"],["listas","Listas"],["pendientes","Pendientes"]].map(([l,A])=>_(A,()=>{t=l,h()},"pestana"+(t===l?" activa":""))));let E=u.vocab.consultar(r.value,s||null);t==="listas"&&(E=E.filter(l=>Z(l.glosa)>=T)),t==="pendientes"&&(E=E.filter(l=>Z(l.glosa)<T));let m=E.slice(0,st),d=J();p.textContent=`${d} ${d===1?"se\xF1a lista":"se\xF1as listas"}. `+(m.length<E.length?`Mostrando ${m.length} de ${E.length}; escriba para acotar.`:`${E.length} en esta lista.`),N(g,m.map(l=>{let A=Z(l.glosa);return i("button",{type:"button",class:"renglon","data-glosa":l.glosa,onclick:()=>a("ensenar/"+encodeURIComponent(l.glosa))},i("span",{text:l.espanol}),i("span",{class:"avance"+(A>=T?" lista":A?" empezada":""),text:A>=T?`\u2713 ${A}`:A?`${A} de ${T}`:"sin ense\xF1ar"}))}))}return N(o,U("Ense\xF1ar se\xF1as",e),i("main",{class:"pagina"},i("p",{class:"intro",text:`Elija una palabra y haga su se\xF1a frente a la c\xE1mara ${T} veces. Con eso la app ya la reconoce; con ${Da} acierta m\xE1s.`}),r,c,n,p,g,_("+ A\xF1adir una palabra que no est\xE1",f,"suave"))),h(),()=>{}}function Mo(o,a,e,t){let s=u.vocab.porGlosa.get(t);if(!s||s.tipo==="fondo")return a("ensenar"),()=>{};let r=!1,c=!0,n=i("p",{class:"estado-grabacion",role:"status","aria-live":"polite"}),p=i("div",{class:"contador"}),g=i("div",{class:"tomas"}),f=i("canvas",{class:"lienzo-avatar chico"}),h=new na(f),E=_("",()=>{r=!r,l.reiniciar(),d()},"primario grande"),m=i("p",{class:"resultado-prueba"});function d(v){let O=Z(t);N(p,i("strong",{text:String(O)}),i("span",{text:O>=T?O>=Da?"ejemplos \xB7 lista":`ejemplos \xB7 lista (mejor con ${Da})`:`de ${T} ejemplos`})),p.classList.toggle("lista",O>=T),E.textContent=r?"Terminar":O?"Grabar m\xE1s ejemplos":"Grabar ejemplos",E.classList.toggle("grabando",r),n.textContent=v||(r?"Grabando. Con las manos abajo, haga la se\xF1a una vez y vuelva a bajarlas.":O>=T?"Pru\xE9bela: haga la se\xF1a y mire si la reconoce.":"Toque \xABGrabar ejemplos\xBB y haga la se\xF1a."),N(g,Xa(t).map((I,b)=>i("span",{class:"toma"},i("button",{type:"button","aria-label":`Ver el ejemplo ${b+1}`,onclick:()=>h.reproducir(I.sec,I.duracionMs)},`\u25B6 ${b+1}`),i("button",{type:"button",class:"quitar","aria-label":`Borrar el ejemplo ${b+1}`,onclick:async()=>{await no(I.id),h.limpiar(),d("Ejemplo borrado.")}},"\u2715"))))}let l=Ka({alSena:async v=>{if(!c)return;let O=v.cuadros.filter(D=>S(D,wa)||S(D,Ua)).length,I=v.finMs-v.inicioMs,b=ee(v.cuadros);if(!r){if(u.reconocedor.total===0)return;let D=u.reconocedor.clasificar(b).candidatas[0],k=D&&D.glosa===t&&D.prob>=.6;m.className="resultado-prueba "+(k?"bien":"mal"),m.textContent=!D||D.prob<.35?"No reconoci\xF3 ninguna se\xF1a.":`${k?"Reconoci\xF3":D.prob>=.6?"La confundi\xF3 con":"Dud\xF3; lo m\xE1s parecido fue"} \xAB${u.vocab.espanolDe(D.glosa)}\xBB (${Math.round(D.prob*100)} %).`;return}if(O<v.cuadros.length*.5||I<300){d("No se vieron bien las manos. Ac\xE9rquese un poco o mejore la luz y repita.");return}let{guardado:x}=await ro(t,b,I);ja(60);let y=Z(t);h.reproducir(b,I),y>=Da?(r=!1,d(`Ejemplo ${y} guardado. \xA1Se\xF1a lista!`)):d(`Ejemplo ${y} guardado.${y===T?" Ya la reconoce; puede grabar m\xE1s o terminar.":" Baje las manos y rep\xEDtala."}`),x||P("Este navegador no deja guardar: los ejemplos se perder\xE1n al cerrar la app.","alerta")}});async function A(){await ga({titulo:`\xBFBorrar \xAB${s.espanol}\xBB?`,texto:s.propia?"Se borran la palabra y todos sus ejemplos.":"Se borran todos los ejemplos de esta se\xF1a.",aceptar:"Borrar",peligro:!0})&&(await io(t),s.propia?a("ensenar"):(h.limpiar(),d()))}return N(o,U(s.espanol,e),i("main",{class:"ensenar-sena"},l.nodo,i("section",{class:"panel-sordo"},i("div",{class:"fila-entre"},p,f),n,E,m,g,i("div",{class:"fila"},_("Ver en el diccionario",()=>a("diccionario/"+encodeURIComponent(t)),"suave chico"),_("Borrar",A,"suave chico rojo")),i("p",{class:"nota",text:"Se guardan solo los puntos del cuerpo y las manos, en este tel\xE9fono. No se guarda video."})))),d(),l.iniciar(),()=>{c=!1,h.detener(),l.detener()}}var rt="1.0.0";function Do(o,a,e){let t=u.ajustes,s=(m,d,l)=>i("label",{class:"ajuste"},i("span",null,i("strong",{text:d}),l?i("small",{text:l}):null),i("input",{type:"checkbox",checked:!!t[m],onchange:A=>va({[m]:A.target.checked})})),r=(m,d,l,A,v=O=>O)=>i("label",{class:"ajuste columna"},i("span",null,i("strong",{text:d}),A?i("small",{text:A}):null),i("select",{class:"campo",onchange:O=>va({[m]:v(O.target.value)})},l.map(([O,I])=>i("option",{value:String(O),text:I,selected:String(t[m])===String(O)})))),c=_e(),n=i("input",{type:"file",accept:".json,application/json",hidden:!0,onchange:async m=>{let d=m.target.files&&m.target.files[0];if(m.target.value="",!!d)try{if(d.size>80*1024*1024)throw new Error("El archivo es demasiado grande.");let l=await lo(JSON.parse(await d.text()));P(`${l.nuevos} ${l.nuevos===1?"ejemplo a\xF1adido":"ejemplos a\xF1adidos"}${l.errores.length?`; ${l.errores.length} con errores se omitieron`:""}.`),h()}catch(l){P(l instanceof SyntaxError?"El archivo no se pudo leer.":l.message,"alerta")}}});async function p(){if(!u.ejemplos.length){P("Todav\xEDa no hay se\xF1as ense\xF1adas.");return}let m=i("input",{type:"checkbox"});await ga({titulo:"Guardar mis se\xF1as en un archivo",texto:"El archivo contiene solo puntos del cuerpo y las manos; no contiene video. Sirve como copia de seguridad y para pasar sus se\xF1as a otro tel\xE9fono.",aceptar:"Guardar archivo",contenido:i("label",{class:"ajuste"},i("span",null,i("small",{text:"Autorizo que estas grabaciones se usen para entrenar el reconocimiento de LSRD, si entrego el archivo al proyecto."})),m)})&&Te(`senas-rd-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(co(m.checked)))}async function g(){await ga({titulo:"\xBFBorrar todas las se\xF1as?",texto:"Se borran todos los ejemplos y las palabras a\xF1adidas en este tel\xE9fono. No se puede deshacer.",aceptar:"Borrar todo",peligro:!0})&&(await po(),P("Se borraron todas las se\xF1as."),h())}let f=i("p",{class:"nota"}),h=()=>{f.textContent=`${u.ejemplos.length} ejemplos de ${new Set(u.ejemplos.map(m=>m.glosa)).size} se\xF1as (${J()} listas). `+(u.almacen.persistente?"Guardados en este tel\xE9fono.":"Este navegador no deja guardarlos: se pierden al cerrar.")};h();let E=Za();return N(o,U("Ajustes",e),i("main",{class:"pagina ajustes"},i("h2",{text:"Mis se\xF1as"}),f,i("div",{class:"rejilla dos"},_("Guardar en un archivo",p,"suave"),_("Cargar un archivo",()=>n.click(),"suave")),n,i("label",{class:"ajuste columna"},i("span",null,i("strong",{text:"Nombre o seud\xF3nimo"}),i("small",{text:"Opcional. Se anota en el archivo de se\xF1as."})),i("input",{type:"text",class:"campo",value:t.autor,maxlength:60,onchange:m=>va({autor:m.target.value.trim()})})),_("Borrar todas las se\xF1as",g,"suave rojo"),i("h2",{text:"Reconocimiento"}),r("sensibilidad","Exigencia",[["estricta","Estricta: se equivoca menos, pide repetir m\xE1s"],["normal","Normal"],["tolerante","Tolerante: acepta se\xF1as menos parecidas"]]),r("pausaFraseMs","Pausa para terminar la frase",[[1200,"Corta (1,2 s)"],[1800,"Normal (1,8 s)"],[2600,"Larga (2,6 s)"]],"Tiempo con las manos abajo para dar la frase por terminada.",Number),s("otraMano","Reconocer tambi\xE9n con la otra mano","Para personas zurdas o diestras, sin volver a ense\xF1ar."),s("detectorPreciso","Detector m\xE1s preciso","Sigue mejor las manos, pero va m\xE1s lento en tel\xE9fonos modestos."),i("h2",{text:"Voz"}),Ca()?null:i("p",{class:"etiqueta pendiente",text:"Este navegador no puede hablar en voz alta."}),s("vozActiva","Decir en voz alta"),s("decirSola","Decir la frase al terminar de firmar","Si la apaga, hay que tocar \xABDecir\xBB."),c.length?r("voz","Voz",[["","La mejor disponible"],...c.map(m=>[m.name,`${m.name} (${m.lang})`])]):null,r("velocidadVoz","Velocidad de la voz",[[.8,"Lenta"],[1,"Normal"],[1.2,"R\xE1pida"]],null,Number),_("Probar la voz",()=>{ba("Buenos d\xEDas. \xBFEn qu\xE9 puedo ayudarle?",{velocidad:t.velocidadVoz,voz:t.voz})||P("Este navegador no puede hablar.")},"suave"),oe()?null:i("p",{class:"nota",text:"Este navegador no transcribe la voz: quien atiende tendr\xE1 que escribir."}),r("velocidadAvatar","Velocidad de las se\xF1as del avatar",[[.7,"Lenta"],[1,"Normal"],[1.3,"R\xE1pida"]],null,Number),i("h2",{text:"Instalar"}),E.instalada?i("p",{class:"nota",text:"La app ya est\xE1 instalada en este tel\xE9fono."}):E.puedePedir?_("Instalar la app",Ja,"primario"):i("p",{class:"nota",text:E.ios?"En iPhone: abra la app en Safari, toque Compartir y luego \xABAgregar a inicio\xBB.":"En Android: men\xFA \u22EE de Chrome \u2192 \xABInstalar app\xBB o \xABAgregar a pantalla de inicio\xBB."}),i("h2",{text:"Privacidad"}),i("ul",{class:"puntos"},i("li",{text:"La c\xE1mara se analiza en el propio tel\xE9fono. El video no se guarda ni se env\xEDa."}),i("li",{text:"De cada se\xF1a ense\xF1ada se guardan solo puntos del cuerpo y las manos, en este tel\xE9fono."}),i("li",{text:"Las conversaciones no se guardan."}),i("li",{text:"Si usa el micr\xF3fono, el navegador transcribe la voz con su propio servicio (en Chrome, de Google). La app no guarda el audio."})),i("h2",{text:"Acerca de"}),i("p",{class:"nota",text:`Se\xF1as RD ${rt}. Las se\xF1as las ense\xF1a cada persona en su tel\xE9fono: no son una referencia oficial de la LSRD. Esta herramienta no reemplaza a un int\xE9rprete.`}),i("p",{class:"nota"},"Detecci\xF3n de manos y cuerpo: MediaPipe (Google, licencia Apache 2.0). Referencias: ",i("a",{href:"https://diccionariolsrd.cc/",target:"_blank",rel:"noopener",text:"Diccionario Oficial de la LSRD"}),"."))),()=>{}}var Q=document.getElementById("app"),Y=null,Oe=0,fa=o=>{Oe++,location.hash="#/"+o},_a=()=>{Oe>0?(Oe--,history.back()):location.hash="#/"};function Co(){if(Y){try{Y()}catch{}Y=null}let[o,a]=location.hash.replace(/^#\/?/,"").split("/"),e="";try{e=a?decodeURIComponent(a):""}catch{e=""}switch(Q.className="pantalla "+(o||"inicio"),window.scrollTo(0,0),Ce(),document.querySelectorAll("body > .velo").forEach(t=>t.remove()),o){case"conversacion":Y=No(Q,fa,_a);break;case"emergencia":Y=yo(Q,fa,_a);break;case"diccionario":Y=xo(Q,fa,_a,e);break;case"ensenar":Y=e?Mo(Q,fa,_a,e):So(Q,fa,_a);break;case"ajustes":Y=Do(Q,fa,_a);break;default:Y=ho(Q,fa)}}mo();N(Q,i("p",{class:"cargando",text:"Cargando\u2026"}));to().then(()=>{window.addEventListener("hashchange",Co),Co(),window.__senasLista=!0}).catch(o=>N(Q,i("p",{class:"cargando",text:"No se pudo iniciar la app: "+(o&&o.message?o.message:o)})));})();
+</script>
+</body>
+</html>
