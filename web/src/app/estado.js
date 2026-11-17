@@ -19,7 +19,9 @@ export const app = {
   vocab: null,
   frases: leerFrases(csvFrases),
   emergencias: leerFrases(csvEmergencias),
-  ejemplos: [],
+  ejemplos: [],      // enseñados en este teléfono
+  ejemplosBase: [],  // incluidos con la app (paquetes/base.json)
+  baseInfo: null,
   propias: [],
   reconocedor: new ReconocedorPorEjemplos({ minEjemplos: MIN_EJEMPLOS }),
   oyentes: new Set(),
@@ -32,12 +34,33 @@ function construirVocabulario() {
   app.vocab = new Vocabulario(leerCsv(csvVocabulario), leerCsv(csvCobertura), app.propias);
 }
 
+/** Todos los ejemplos en uso: los incluidos con la app (si están activados) y los de este teléfono. */
+export const todos = () => (app.ajustes && app.ajustes.usarBase !== false ? app.ejemplosBase.concat(app.ejemplos) : app.ejemplos);
+
+/**
+ * Señas incluidas con la app: un paquete publicado junto a ella. No se guardan en el
+ * teléfono ni se exportan; se suman a las que la persona enseña.
+ */
+export async function cargarBase(obtener = (u) => fetch(u, { cache: 'no-cache' })) {
+  try {
+    const r = await obtener('paquetes/base.json');
+    if (!r || !r.ok) return 0;
+    const p = Paquete.importar(await r.json());
+    for (const x of p.propias) agregarPropia(x.espanol, x.glosa, false);
+    app.ejemplosBase = p.ejemplos.filter((e) => app.vocab.existe(e.glosa) || (e.espanol && agregarPropia(e.espanol, e.glosa, false)))
+      .map((e, i) => ({ id: 'base-' + i, glosa: e.glosa, espanol: app.vocab.espanolDe(e.glosa), sec: e.sec, creado: e.creado, duracionMs: e.duracionMs || 1000, base: true }));
+    app.baseInfo = app.ejemplosBase.length === 0 ? null : { autor: p.autor, senas: new Set(app.ejemplosBase.map((e) => e.glosa)).size, ejemplos: app.ejemplosBase.length };
+    reentrenar();
+    return app.ejemplosBase.length;
+  } catch { return 0; }
+}
+
 export function reentrenar() {
   app.reconocedor = new ReconocedorPorEjemplos({
     minEjemplos: MIN_EJEMPLOS, aceptarEspejo: app.ajustes.otraMano,
     factorDesconocida: SENSIBILIDAD[app.ajustes.sensibilidad] || SENSIBILIDAD.normal,
   });
-  app.reconocedor.fijar(app.ejemplos);
+  app.reconocedor.fijar(todos());
   avisar();
 }
 
@@ -50,19 +73,20 @@ export async function iniciar() {
   // Una seña propia cuyo registro se perdió se recupera a partir de sus ejemplos.
   for (const e of app.ejemplos) if (!app.vocab.existe(e.glosa) && e.espanol) agregarPropia(e.espanol, e.glosa, false);
   reentrenar();
+  await cargarBase();
 }
 
 export function guardarAjustes(cambios) {
   Object.assign(app.ajustes, cambios);
   app.almacen.guardarAjustes(app.ajustes);
-  if ('otraMano' in cambios || 'sensibilidad' in cambios) reentrenar(); else avisar();
+  if ('otraMano' in cambios || 'sensibilidad' in cambios || 'usarBase' in cambios) reentrenar(); else avisar();
 }
 
-export const conteo = (glosa) => app.ejemplos.reduce((n, e) => n + (e.glosa === glosa ? 1 : 0), 0);
-export const ejemplosDe = (glosa) => app.ejemplos.filter((e) => e.glosa === glosa);
+export const conteo = (glosa) => todos().reduce((n, e) => n + (e.glosa === glosa ? 1 : 0), 0);
+export const ejemplosDe = (glosa) => todos().filter((e) => e.glosa === glosa);
 export const lista = (glosa) => conteo(glosa) >= MIN_EJEMPLOS;
-export const senasListas = () => { const c = new Map(); for (const e of app.ejemplos) c.set(e.glosa, (c.get(e.glosa) || 0) + 1); return [...c.values()].filter((n) => n >= MIN_EJEMPLOS).length; };
-export const senasEmpezadas = () => new Set(app.ejemplos.map((e) => e.glosa)).size;
+export const senasListas = () => { const c = new Map(); for (const e of todos()) c.set(e.glosa, (c.get(e.glosa) || 0) + 1); return [...c.values()].filter((n) => n >= MIN_EJEMPLOS).length; };
+export const senasEmpezadas = () => new Set(todos().map((e) => e.glosa)).size;
 
 /** El ejemplo que el avatar reproduce para una seña: el más reciente. */
 export function clipDe(glosa) {
@@ -85,7 +109,7 @@ export async function borrarEjemplo(id) {
 }
 
 export async function borrarSena(glosa) {
-  for (const e of ejemplosDe(glosa)) await app.almacen.borrar(e.id);
+  for (const e of ejemplosDe(glosa)) if (!e.base) await app.almacen.borrar(e.id);
   app.ejemplos = app.ejemplos.filter((e) => e.glosa !== glosa);
   const antes = app.propias.length;
   app.propias = app.propias.filter((p) => p.glosa !== glosa);
@@ -133,4 +157,5 @@ export async function borrarTodo() {
   app.propias = [];
   construirVocabulario();
   reentrenar();
+  await cargarBase();
 }

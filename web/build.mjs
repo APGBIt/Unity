@@ -97,12 +97,19 @@ if (existsSync(ORIGEN)) {
   console.warn('AVISO: falta el detector. Ejecute "npm install" en web/ y vuelva a construir.');
 }
 
+// Señas incluidas con la app: web/paquetes/base.json (se arma con herramientas/unir_paquetes.mjs).
+// Si no existe, se publica un paquete vacío para que la app no encuentre un archivo faltante.
+mkdirSync(join(SALIDA, 'paquetes'), { recursive: true });
+const BASE = join(AQUI, 'paquetes', 'base.json');
+const vacio = { tipo: 'senas-rd/paquete', version: 1, formato: 'LSRD-LM v1', longitud: 32, autor: '', propias: [], ejemplos: [] };
+writeFileSync(join(SALIDA, 'paquetes', 'base.json'), existsSync(BASE) ? readFileSync(BASE) : JSON.stringify(vacio));
+
 writeFileSync(join(SALIDA, '.nojekyll'), '');
 writeFileSync(join(SALIDA, 'LEEME.txt'), 'Esta carpeta es la app web Señas RD ya construida. No la edite a mano: se genera con "npm run build" en web/.\nGitHub Pages la publica tal cual (Settings → Pages → rama main, carpeta /docs).\n');
 
 // Caché para usar la app sin conexión. El nombre cambia cuando cambia cualquier archivo.
 const huella = createHash('sha256');
-const recorrer = (d) => readdirSync(d).sort().forEach((n) => { const p = join(d, n); if (statSync(p).isDirectory()) recorrer(p); else if (n !== 'sw.js') huella.update(n + statSync(p).size).update(n.endsWith('.html') ? readFileSync(p) : ''); });
+const recorrer = (d) => readdirSync(d).sort().forEach((n) => { const p = join(d, n); if (statSync(p).isDirectory()) recorrer(p); else if (n !== 'sw.js') huella.update(n + statSync(p).size).update(/\.(html|json|webmanifest)$/.test(n) ? readFileSync(p) : ''); });
 recorrer(SALIDA);
 const version = huella.digest('hex').slice(0, 10);
 writeFileSync(join(SALIDA, 'sw.js'), `// Señas RD · caché para usar la app sin conexión. No guarda video, audio ni datos personales.
@@ -117,6 +124,11 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== location.origin) return;
   if (req.mode === 'navigate') {
     e.respondWith(fetch(req).then((r) => { const cp = r.clone(); caches.open(CACHE).then((c) => c.put('./index.html', cp)); return r; }).catch(() => caches.match('./index.html')));
+    return;
+  }
+  // Las señas incluidas pueden cambiar entre versiones: primero la red y, sin conexión, la copia guardada.
+  if (url.pathname.includes('/paquetes/')) {
+    e.respondWith(fetch(req).then((r) => { if (r.ok) { const cp = r.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); } return r; }).catch(() => caches.match(req)));
     return;
   }
   // El detector pesa unos 25 MB: se guarda la primera vez que se usa la cámara y después se sirve desde el teléfono.

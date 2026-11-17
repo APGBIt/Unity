@@ -65,7 +65,7 @@ Sin servidor la app sigue funcionando con traducción literal local y frases rá
 
 ## Qué se verificó (sin abrir Unity)
 
-- App web: 22 pruebas del núcleo con paridad exacta frente a Python, y una prueba de punta a punta en Chromium con teléfono simulado (enseñar, reconocer, conversar, emergencia, guardar y recuperar, uso sin conexión). MediaPipe se comprobó dentro de la app con una imagen real; no con manos firmando.
+- App web: 24 pruebas del núcleo con paridad exacta frente a Python, y una prueba de punta a punta en Chromium con teléfono simulado (enseñar, reconocer, conversar, emergencia, guardar y recuperar, uso sin conexión). MediaPipe se comprobó dentro de la app con una imagen real; no con manos firmando.
 
 - 48 pruebas del canal de entrenamiento, incluidos el canal de videos, el modo semilla y la exportación ONNX (opset 15) con diferencia máxima de 3·10⁻⁷ frente a PyTorch.
 - 21 pruebas del servidor (emergencias, diccionario, reportes, traducción, memoria validada, validación de la salida del modelo de lenguaje, voz, grabaciones, avatar, clave de acceso y rutas maliciosas).

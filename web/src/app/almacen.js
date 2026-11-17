@@ -14,6 +14,7 @@ export const AJUSTES_POR_DEFECTO = {
   detectorPreciso: false,
   velocidadAvatar: 1,
   otraMano: true,
+  usarBase: true,         // usar las señas incluidas con la app
   autor: '',
   avisoVisto: false,
 };

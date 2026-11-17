@@ -12,6 +12,8 @@ import { Vocabulario, leerFrases } from '../src/nucleo/vocabulario.js';
 import { clave, leerCsv, normalizar, sinTildes } from '../src/nucleo/texto.js';
 import { ConstructorFrase } from '../src/nucleo/frase.js';
 import * as Paquete from '../src/nucleo/paquete.js';
+import { cortarSenas } from '../src/nucleo/cortes.js';
+import { unir } from '../herramientas/unir_paquetes.mjs';
 import { agrupar, cargar } from './datos.mjs';
 
 const raiz = new URL('../../', import.meta.url).pathname;
@@ -292,4 +294,59 @@ test('paquete: ida y vuelta, y rechaza lo que no es válido', () => {
   assert.equal(rm.ejemplos.length, 0);
   assert.equal(rm.errores.length, 3);
   assert.equal(rm.propias.length, 1);
+});
+
+// ---------------------------------------------------------------- desde un video y señas incluidas
+
+test('de un video: corta cada seña; si las manos nunca bajan, toma el tramo completo', () => {
+  const flujo = cargar(new URL('../e2e/datos/flujo.json.gz', import.meta.url).pathname);
+  const partir = (t) => { const c = []; for (let i = 0; i < t.n; i++) c.push(t.cuadros.subarray(i * V, (i + 1) * V)); return c; };
+  // Un "video" con dos tomas seguidas de la misma seña, a 15 cuadros por segundo (uno de cada dos).
+  const [a, b] = flujo.tomas.filter((t) => t.glosa === 'S00');
+  const cuadros = [...partir(a), ...partir(b)].filter((_, i) => i % 2 === 0);
+  const tiempos = cuadros.map((_, i) => i * (1000 / 15));
+  const senas = cortarSenas(cuadros, tiempos);
+  assert.equal(senas.length, 2);
+  assert.ok(senas.every((s) => s.sec.length === 32 * V && s.duracionMs > 400));
+
+  // Las cortadas del video se reconocen con ejemplos grabados en vivo.
+  const rec = new ReconocedorPorEjemplos({ minEjemplos: 3 });
+  const enVivo = [];
+  for (const t of flujo.tomas.filter((x) => x.glosa !== 'DESCONOCIDA')) {
+    const cs = partir(t), ts = t.tiempos_ms;
+    const [[ini, fin]] = segmentarSecuencia(cs, ts).segmentos;
+    enVivo.push({ glosa: t.glosa, sec: remuestrear(cs.filter((_, i) => ts[i] >= ini && ts[i] <= fin)) });
+  }
+  rec.fijar(enVivo.filter((e, i) => !(e.glosa === 'S00' && i < 2)));
+  for (const s of senas) { const c = rec.clasificar(s.sec).candidatas[0]; assert.equal(c.glosa, 'S00'); assert.ok(c.prob >= 0.6); }
+
+  // Clip recortado: empieza y termina con las manos arriba.
+  const [[ini, fin]] = segmentarSecuencia(partir(a), a.tiempos_ms).segmentos;
+  const recorte = partir(a).filter((_, i) => a.tiempos_ms[i] >= ini + 60 && a.tiempos_ms[i] <= fin - 60);
+  const uno = cortarSenas(recorte, recorte.map((_, i) => i * 33.3));
+  assert.equal(uno.length, 1);
+  assert.equal(rec.clasificar(uno[0].sec).candidatas[0].glosa, 'S00');
+
+  // Sin manos no sale nada.
+  const reposo = partir(a).slice(0, 6);
+  assert.deepEqual(cortarSenas(reposo, reposo.map((_, i) => i * 66)), []);
+  assert.deepEqual(cortarSenas([], []), []);
+});
+
+test('señas incluidas con la app: solo entran paquetes autorizados', () => {
+  const ej = (g, n) => conocidas.slice(0, n).map((m, i) => ({ id: `ej-${g}-${i}`, glosa: g, espanol: g.toLowerCase(), sec: m.sec, duracionMs: 900 }));
+  const autorizado = JSON.parse(JSON.stringify(Paquete.exportar([...ej('HOLA', 3), ...ej('GRACIAS', 2)], [], { consentimiento: true })));
+  const sinPermiso = JSON.parse(JSON.stringify(Paquete.exportar(ej('CEDULA', 3), [], { consentimiento: false })));
+  const otro = JSON.parse(JSON.stringify(Paquete.exportar(ej('HOLA', 3), [{ glosa: 'SEÑORA-PEREZ', espanol: 'Señora Pérez' }], { consentimiento: true })));
+  const { paquete, resumen } = unir([autorizado, sinPermiso, otro, { tipo: 'otra-cosa', consentimiento_entrenamiento: true }], { autor: 'Equipo', maximoPorSena: 5 });
+  assert.equal(resumen.aceptados, 2);
+  assert.equal(resumen.sinAutorizacion, 1);
+  assert.equal(resumen.errores.length, 1);
+  assert.deepEqual(resumen.porSena, { HOLA: 5, GRACIAS: 2 });
+  const leido = Paquete.importar(JSON.parse(JSON.stringify(paquete)));
+  assert.equal(leido.ejemplos.length, 7);
+  assert.equal(new Set(leido.ejemplos.map((e) => e.id)).size, 7);
+  assert.equal(leido.autor, 'Equipo');
+  assert.deepEqual(leido.propias, [{ glosa: 'SEÑORA-PEREZ', espanol: 'Señora Pérez' }]);
+  assert.ok(!leido.ejemplos.some((e) => e.glosa === 'CEDULA'));
 });

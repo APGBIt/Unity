@@ -42,15 +42,15 @@ export function pantallaAjustes(raiz, ir, volver) {
   }
 
   async function vaciar() {
-    const ok = await confirmar({ titulo: '¿Borrar todas las señas?', texto: 'Se borran todos los ejemplos y las palabras añadidas en este teléfono. No se puede deshacer.', aceptar: 'Borrar todo', peligro: true });
+    const ok = await confirmar({ titulo: '¿Borrar todas las señas?', texto: 'Se borran todos los ejemplos y las palabras añadidas en este teléfono. Las señas incluidas con la app no se tocan. No se puede deshacer.', aceptar: 'Borrar todo', peligro: true });
     if (!ok) return;
     await borrarTodo();
-    aviso('Se borraron todas las señas.');
+    aviso('Se borraron las señas de este teléfono.');
     pintarDatos();
   }
 
   const datos = h('p', { class: 'nota' });
-  const pintarDatos = () => { datos.textContent = `${app.ejemplos.length} ejemplos de ${new Set(app.ejemplos.map((e) => e.glosa)).size} señas (${senasListas()} listas). ` + (app.almacen.persistente ? 'Guardados en este teléfono.' : 'Este navegador no deja guardarlos: se pierden al cerrar.'); };
+  const pintarDatos = () => { datos.textContent = `${app.ejemplos.length} ejemplos de ${new Set(app.ejemplos.map((e) => e.glosa)).size} señas enseñadas en este teléfono. En total, ${senasListas()} señas listas para reconocer. ` + (app.almacen.persistente ? 'Guardados en este teléfono.' : 'Este navegador no deja guardarlos: se pierden al cerrar.'); };
   pintarDatos();
   const inst = estadoInstalacion();
 
@@ -61,6 +61,7 @@ export function pantallaAjustes(raiz, ir, volver) {
       h('label', { class: 'ajuste columna' }, h('span', null, h('strong', { text: 'Nombre o seudónimo' }), h('small', { text: 'Opcional. Se anota en el archivo de señas.' })),
         h('input', { type: 'text', class: 'campo', value: a.autor, maxlength: 60, onchange: (e) => guardarAjustes({ autor: e.target.value.trim() }) })),
       boton('Borrar todas las señas', vaciar, 'suave rojo'),
+      app.baseInfo ? interruptor('usarBase', 'Usar las señas incluidas con la app', `${app.baseInfo.senas} señas ya vienen enseñadas${app.baseInfo.autor ? ` (por ${app.baseInfo.autor})` : ''}. Las suyas se suman a esas.`) : null,
 
       h('h2', { text: 'Reconocimiento' }),
       selector('sensibilidad', 'Exigencia', [['estricta', 'Estricta: se equivoca menos, pide repetir más'], ['normal', 'Normal'], ['tolerante', 'Tolerante: acepta señas menos parecidas']]),

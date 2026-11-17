@@ -28,6 +28,11 @@ Límites que hay que conocer:
 - Las señas son las que cada persona enseñó: no son una referencia oficial.
 - Todavía no usa la expresión de la cara para distinguir señas.
 
+## Señas incluidas y videos
+
+- **Señas incluidas:** lo que esté en `paquetes/base.json` viene ya enseñado para todas las personas. Se arma con `node herramientas/unir_paquetes.mjs` a partir de archivos de señas autorizados. Hoy está vacío. El procedimiento está en [documentacion/ENSENAR_EL_DICCIONARIO.md](../documentacion/ENSENAR_EL_DICCIONARIO.md).
+- **Aprender de un video:** en la pantalla de cada seña se puede cargar un archivo de video (hasta 30 segundos). Se procesa en el teléfono con el mismo detector de la cámara.
+
 ## Medición
 
 Con datos **sintéticos** (no son LSRD; sirven para comprobar que el método funciona), 12 señas y 4 personas:
@@ -50,7 +55,7 @@ node tests/evaluar.mjs /tmp/sintetico_grande.json.gz
 
 ```bash
 npm install
-npm test            # 22 pruebas del núcleo (incluye paridad exacta con Python y C#)
+npm test            # 24 pruebas del núcleo (incluye paridad exacta con Python y C#)
 npm run build       # genera ../docs
 npm run e2e         # prueba de punta a punta en Chromium con una cámara simulada (necesita Playwright)
 ```

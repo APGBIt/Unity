@@ -2,7 +2,7 @@
 //   node e2e/run.mjs            → cámara simulada con puntos clave sintéticos (enseñar, reconocer, conversar)
 //   node e2e/run.mjs camara FOTO.y4m → cámara falsa con una imagen real: comprueba que MediaPipe arranca dentro de la app
 import { createRequire } from 'node:module';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
@@ -47,6 +47,16 @@ if (MODO === 'camara') {
     console.log('      píxeles del esqueleto dibujados:', pintado);
   });
   await foto('camara-real');
+  if (process.argv[4]) {
+    await paso('aprender de un archivo de video: lo lee completo y avisa si no hay manos', async () => {
+      await page.goto(url + '#/ensenar/HOLA');
+      await page.waitForSelector('.contador');
+      await page.setInputFiles('input[type=file][accept="video/*"]', process.argv[4]);
+      await esperar(() => /Leyendo el video… \d+ %/.test(document.querySelector('.estado-grabacion').textContent), null, 120000);
+      await esperar(() => /no se vieron las manos|ejemplos? tomados? del video/.test(document.querySelector('.estado-grabacion').textContent), null, 240000);
+      console.log('      resultado:', await textoDe('.estado-grabacion'));
+    });
+  }
 } else {
   const flujo = gunzipSync(readFileSync(join(AQUI, 'datos/flujo.json.gz'))).toString('utf8');
   await page.addInitScript(`(() => {
@@ -196,6 +206,33 @@ if (MODO === 'camara') {
     await esperar(() => /^0 ejemplos/.test(document.querySelector('.ajustes .nota').textContent));
     await page.setInputFiles('input[type=file]', { name: 'senas.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(paquete)) });
     await esperar(() => /^12 ejemplos/.test(document.querySelector('.ajustes .nota').textContent));
+  });
+  await paso('señas incluidas con la app: vienen listas sin enseñar nada', async () => {
+    const base = join(AQUI, '..', '..', 'docs', 'paquetes', 'base.json');
+    const original = readFileSync(base);
+    try {
+      writeFileSync(base, JSON.stringify({ ...paquete, autor: 'Equipo de prueba' }));
+      await page.goto(url + '#/ajustes');
+      await page.locator('.btn', { hasText: 'Borrar todas las señas' }).click();
+      await page.locator('.caja .btn.peligro').click();
+      await esperar(() => /^0 ejemplos/.test(document.querySelector('.ajustes .nota').textContent));
+      await page.goto(url);
+      await page.reload();
+      await esperar(() => window.__senasLista === true);
+      const estado = await textoDe('.tarjeta.estado');
+      if (!estado.includes('3 señas listas') || !estado.includes('3 vienen incluidas')) throw new Error(estado);
+      await page.goto(url + '#/conversacion');
+      await page.waitForSelector('.chip-camara');
+      await firmar((await tomasDe('S01'))[5]);
+      await esperar(() => document.querySelector('.panel-sordo .chip')?.dataset.glosa === 'GRACIAS');
+      await page.goto(url + '#/ensenar/HOLA');
+      await page.waitForSelector('.toma.incluida');
+      if ((await page.locator('.toma .quitar').count()) !== 0) throw new Error('los ejemplos incluidos no deben poder borrarse');
+      await foto('11-senas-incluidas');
+    } finally { writeFileSync(base, original); }
+    await page.goto(url);
+    await page.reload();
+    await esperar(() => window.__senasLista === true);
   });
   await paso('funciona sin conexión después de la primera visita', async () => {
     await page.goto(url);

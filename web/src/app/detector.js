@@ -28,6 +28,59 @@ export function mensajeDeCamara(e) {
   return (e && e.message) || 'No se pudo abrir la cámara.';
 }
 
+const buscar = (video, t) => new Promise((ok) => {
+  let listo = false;
+  const fin = () => { if (!listo) { listo = true; video.removeEventListener('seeked', fin); ok(); } };
+  video.addEventListener('seeked', fin);
+  setTimeout(fin, 1500); // algunos teléfonos no avisan cuando el salto es muy corto
+  video.currentTime = t;
+});
+
+export const MAX_VIDEO_S = 30;
+
+/**
+ * Lee un archivo de video cuadro a cuadro y devuelve sus puntos clave, como si se hubiera
+ * firmado frente a la cámara. El video se procesa en el teléfono y no se guarda.
+ * @returns {{ cuadros: Float32Array[], tiempos: number[], duracionS: number }}
+ */
+export async function extraerDeVideo(archivo, { alProgreso = () => {}, cuadrosPorSegundo = 15 } = {}) {
+  await cargarGuion();
+  const video = document.createElement('video');
+  video.muted = true; video.playsInline = true; video.preload = 'auto';
+  const url = URL.createObjectURL(archivo);
+  let holistico = null;
+  try {
+    video.src = url;
+    await new Promise((ok, mal) => {
+      video.onloadeddata = ok;
+      video.onerror = () => mal(new Error('Este teléfono no puede leer ese video. Pruebe con un MP4.'));
+      setTimeout(() => mal(new Error('El video tardó demasiado en abrirse.')), 20000);
+    });
+    const duracionS = Math.min(Number.isFinite(video.duration) ? video.duration : 0, MAX_VIDEO_S);
+    if (!(duracionS > 0.3) || !video.videoWidth) throw new Error('El video está vacío o es demasiado corto.');
+    const aspecto = video.videoWidth / video.videoHeight;
+    holistico = new window.Holistic({ locateFile: (f) => CARPETA + f });
+    holistico.setOptions({ modelComplexity: 1, smoothLandmarks: true, enableSegmentation: false, refineFaceLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5, selfieMode: false });
+    let ultimo = null;
+    holistico.onResults((r) => { ultimo = r; });
+    const cuadros = [], tiempos = [];
+    const paso = 1 / cuadrosPorSegundo;
+    for (let t = 0; t < duracionS; t += paso) {
+      await buscar(video, t);
+      ultimo = null;
+      await holistico.send({ image: video });
+      if (ultimo) { cuadros.push(empaquetar(ultimo.poseLandmarks, ultimo.leftHandLandmarks, ultimo.rightHandLandmarks, ultimo.faceLandmarks, aspecto)); tiempos.push(t * 1000); }
+      alProgreso(Math.min(1, (t + paso) / duracionS));
+    }
+    return { cuadros, tiempos, duracionS };
+  } finally {
+    if (holistico) { try { await holistico.close(); } catch { /* */ } }
+    URL.revokeObjectURL(url);
+    video.removeAttribute('src');
+    try { video.load(); } catch { /* */ }
+  }
+}
+
 /**
  * Uso: const d = new Detector(video, { alCuadro, alEstado }); await d.iniciar({ frontal, preciso }); … d.detener();
  * alCuadro(cuadro: Float32Array(234), tMs, { aspecto, manos })

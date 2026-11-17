@@ -1,5 +1,7 @@
 import { h, aviso, barra, boton, confirmar, poner, vibrar } from './dom.js';
 import { crearCamara } from './camara.js';
+import { extraerDeVideo, MAX_VIDEO_S } from '../app/detector.js';
+import { cortarSenas } from '../nucleo/cortes.js';
 import { META_EJEMPLOS, MIN_EJEMPLOS, agregarEjemplo, agregarPropia, app, borrarEjemplo, borrarSena, conteo, ejemplosDe, senasListas } from '../app/estado.js';
 import { nombreCategoria } from '../nucleo/vocabulario.js';
 import { remuestrear } from '../nucleo/remuestreo.js';
@@ -74,9 +76,9 @@ export function pantallaEnsenarSena(raiz, ir, volver, glosa) {
     bGrabar.classList.toggle('grabando', grabando);
     estado.textContent = mensaje || (grabando ? 'Grabando. Con las manos abajo, haga la seña una vez y vuelva a bajarlas.'
       : n >= MIN_EJEMPLOS ? 'Pruébela: haga la seña y mire si la reconoce.' : 'Toque «Grabar ejemplos» y haga la seña.');
-    poner(tomas, ejemplosDe(glosa).map((ej, i) => h('span', { class: 'toma' },
-      h('button', { type: 'button', 'aria-label': `Ver el ejemplo ${i + 1}`, onclick: () => avatar.reproducir(ej.sec, ej.duracionMs) }, `▶ ${i + 1}`),
-      h('button', { type: 'button', class: 'quitar', 'aria-label': `Borrar el ejemplo ${i + 1}`, onclick: async () => { await borrarEjemplo(ej.id); avatar.limpiar(); pintar('Ejemplo borrado.'); } }, '✕'))));
+    poner(tomas, ejemplosDe(glosa).map((ej, i) => h('span', { class: 'toma' + (ej.base ? ' incluida' : '') },
+      h('button', { type: 'button', 'aria-label': `Ver el ejemplo ${i + 1}`, title: ej.base ? 'Incluido con la app' : '', onclick: () => avatar.reproducir(ej.sec, ej.duracionMs) }, `▶ ${i + 1}`),
+      ej.base ? null : h('button', { type: 'button', class: 'quitar', 'aria-label': `Borrar el ejemplo ${i + 1}`, onclick: async () => { await borrarEjemplo(ej.id); avatar.limpiar(); pintar('Ejemplo borrado.'); } }, '✕'))));
   }
 
   const camara = crearCamara({
@@ -105,8 +107,36 @@ export function pantallaEnsenarSena(raiz, ir, volver, glosa) {
     },
   });
 
+  // Enseñar desde un archivo de video: se procesa en el teléfono con el mismo detector de la cámara.
+  const archivo = h('input', { type: 'file', accept: 'video/*', hidden: true, onchange: async (ev) => {
+    const f = ev.target.files && ev.target.files[0];
+    ev.target.value = '';
+    if (!f || !vivo) return;
+    grabando = false;
+    camara.detener();
+    bVideo.disabled = bGrabar.disabled = true;
+    try {
+      pintar('Leyendo el video…');
+      const r = await extraerDeVideo(f, { alProgreso: (p) => { if (vivo) estado.textContent = `Leyendo el video… ${Math.round(p * 100)} %`; } });
+      if (!vivo) return;
+      const senas = cortarSenas(r.cuadros, r.tiempos, META_EJEMPLOS);
+      if (senas.length === 0) { pintar('En ese video no se vieron las manos. Pruebe con otro donde se vea a la persona de frente, de la cintura para arriba.'); return; }
+      let ultimo = null;
+      for (const s of senas) ultimo = (await agregarEjemplo(glosa, s.sec, s.duracionMs)).ejemplo;
+      vibrar(60);
+      avatar.reproducir(ultimo.sec, ultimo.duracionMs);
+      pintar(`${senas.length} ${senas.length === 1 ? 'ejemplo tomado' : 'ejemplos tomados'} del video. Mírelos con ▶ y borre los que no sean la seña.`);
+    } catch (e) {
+      if (vivo) pintar(e && e.message ? e.message : 'No se pudo leer el video.');
+    } finally {
+      bVideo.disabled = bGrabar.disabled = false;
+      if (vivo) camara.iniciar();
+    }
+  } });
+  const bVideo = boton('Aprender de un video', () => archivo.click(), 'suave');
+
   async function olvidar() {
-    const ok = await confirmar({ titulo: `¿Borrar «${e.espanol}»?`, texto: e.propia ? 'Se borran la palabra y todos sus ejemplos.' : 'Se borran todos los ejemplos de esta seña.', aceptar: 'Borrar', peligro: true });
+    const ok = await confirmar({ titulo: `¿Borrar «${e.espanol}»?`, texto: e.propia ? 'Se borran la palabra y todos sus ejemplos.' : 'Se borran los ejemplos de esta seña grabados en este teléfono.', aceptar: 'Borrar', peligro: true });
     if (!ok) return;
     await borrarSena(glosa);
     if (e.propia) ir('ensenar'); else { avatar.limpiar(); pintar(); }
@@ -117,11 +147,12 @@ export function pantallaEnsenarSena(raiz, ir, volver, glosa) {
       camara.nodo,
       h('section', { class: 'panel-sordo' },
         h('div', { class: 'fila-entre' }, contador, lienzo),
-        estado, bGrabar, resultado, tomas,
+        estado, bGrabar, bVideo, archivo, resultado, tomas,
+        e.urlOficial ? h('a', { class: 'enlace-oficial', href: e.urlOficial, target: '_blank', rel: 'noopener', text: `Ver «${e.tituloOficial}» en el Diccionario Oficial ↗` }) : null,
         h('div', { class: 'fila' },
           boton('Ver en el diccionario', () => ir('diccionario/' + encodeURIComponent(glosa)), 'suave chico'),
           boton('Borrar', olvidar, 'suave chico rojo')),
-        h('p', { class: 'nota', text: 'Se guardan solo los puntos del cuerpo y las manos, en este teléfono. No se guarda video.' }))));
+        h('p', { class: 'nota', text: `Se guardan solo los puntos del cuerpo y las manos, en este teléfono. No se guarda video. Desde un archivo, use videos suyos o que tenga permiso para usar (hasta ${MAX_VIDEO_S} segundos).` }))));
   pintar();
   camara.iniciar();
   return () => { vivo = false; avatar.detener(); camara.detener(); };

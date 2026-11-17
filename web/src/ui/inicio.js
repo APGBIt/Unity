@@ -1,5 +1,5 @@
 import { h, boton, poner } from './dom.js';
-import { senasEmpezadas, senasListas } from '../app/estado.js';
+import { app, senasEmpezadas, senasListas } from '../app/estado.js';
 import { alCambiarInstalacion, estadoInstalacion, pedirInstalacion } from '../app/pwa.js';
 
 export function pantallaInicio(raiz, ir) {
@@ -19,7 +19,7 @@ export function pantallaInicio(raiz, ir) {
       h('div', { class: 'marca' }, h('div', { class: 'logo', 'aria-hidden': 'true' }, '🤟'), h('div', null, h('h1', { text: 'Señas RD' }), h('p', { text: 'Lengua de Señas Dominicana ↔ español' }))),
       h('div', { class: 'tarjeta estado' + (listas ? '' : ' vacia') },
         listas
-          ? [h('strong', { text: `${listas} ${listas === 1 ? 'seña lista' : 'señas listas'} para reconocer` }), empezadas > listas ? h('span', { text: `${empezadas - listas} más a medio enseñar` }) : null]
+          ? [h('strong', { text: `${listas} ${listas === 1 ? 'seña lista' : 'señas listas'} para reconocer` }), app.baseInfo && app.ajustes.usarBase !== false ? h('span', { text: `${app.baseInfo.senas} vienen incluidas con la app` }) : null, empezadas > listas ? h('span', { text: `${empezadas - listas} más a medio enseñar` }) : null]
           : [h('strong', { text: 'Todavía no reconoce ninguna seña' }), h('span', { text: 'Enséñele las suyas: tres ejemplos de cada una bastan para empezar.' })]),
       boton(h('span', null, 'Conversación', h('small', { text: 'Señas a voz y voz a señas' })), () => ir('conversacion'), 'primario grande'),
       boton(h('span', null, 'Emergencia', h('small', { text: 'Frases urgentes, sin conexión' })), () => ir('emergencia'), 'peligro grande'),

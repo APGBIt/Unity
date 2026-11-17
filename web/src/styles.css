@@ -143,6 +143,8 @@ button, input, select { font: inherit; color: inherit; }
 .tomas:empty { display: none; }
 .toma { display: inline-flex; border: 1px solid var(--borde); border-radius: 999px; overflow: hidden; }
 .toma button { border: 0; background: var(--clara); padding: 9px 13px; min-height: 42px; cursor: pointer; font-weight: 600; }
+.toma.incluida button { color: var(--acento); }
+.enlace-oficial { font-size: 15.5px; }
 .toma .quitar { background: var(--superficie); color: var(--peligro-suave); }
 .btn.grande.primario { text-align: center; }
 
